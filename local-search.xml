@@ -4,6 +4,19 @@
   
   
   <entry>
+    <title>a53-jlink调试</title>
+    <link href="/2026/07/16/a53-jlink%E8%B0%83%E8%AF%95/"/>
+    <url>/2026/07/16/a53-jlink%E8%B0%83%E8%AF%95/</url>
+    
+    <content type="html"><![CDATA[<p>在win环境下实现jlink调试ARM Cortex-A53</p><h1 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h1><ol><li><p>jlink 软硬件环境</p><ul><li>硬件版本：V11 Base。注意pin1的状态（可通过内部跳线帽修改）</li><li>驱动版本：<a href="https://www.segger.com/downloads/jlink/JLink_Windows_V810_x86_64.exe">JLink_Windows_V810_x86_64.exe</a></li></ul></li><li><p>jlink script files</p><ul><li>配置CORESIGHT_SetCoreBaseAddr和CORESIGHT_SetCTICoreBaseAddr</li><li>当存在多核心时，各核心的地址不同（由硬件决定），当前仅实现单核的debug</li></ul> <figure class="highlight scss"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs scss">int <span class="hljs-built_in">ConfigTargetSettings</span>(void) &#123;<br>    <span class="hljs-built_in">JLINK_ExecCommand</span>(&quot;JLINK_CPU = CORTEX_A53;&quot;);<br>    <span class="hljs-built_in">JLINK_ExecCommand</span>(&quot;CORESIGHT_SetCoreBaseAddr = <span class="hljs-number">0</span>x80010000&quot;);<br>    <span class="hljs-built_in">JLINK_ExecCommand</span>(&quot;CORESIGHT_SetCTICoreBaseAddr = <span class="hljs-number">0</span>x80020000&quot;);<br>    return <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure></li><li><p>硬件调试环境</p><ul><li>通过JTAG连接目标板</li></ul></li></ol><h1 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h1><ol><li>启动JLinkGDBServer，启动时配置<ul><li>Target device: Cortex-A53</li><li>Target Interface: JTAG</li><li>Speed: 推荐先使用固定的低速率进行测试</li><li>Script file: 指定为上面的脚本，配置CoreSight相关的信息</li><li>GDB port: 可指定端口号</li></ul></li></ol><p><img src="/2026/07/16/a53-jlink%E8%B0%83%E8%AF%95/jlink_gdbserver_cfg.JPG" alt="jlink gdbserver"></p><figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs mipsasm">-select USB=<span class="hljs-number">0</span> -device Cortex-A53 -endian little -if <span class="hljs-keyword">JTAG </span>-speed auto -ir -LocalhostOnly -nologtofile -<span class="hljs-keyword">scriptfile </span><span class="hljs-string">&quot;A53.JLinkScript&quot;</span> -port <span class="hljs-number">2331</span> -<span class="hljs-keyword">SWOPort </span><span class="hljs-number">2332</span> -TelnetPort <span class="hljs-number">2333</span><br></code></pre></td></tr></table></figure><ol start="2"><li>gdb调试<ul><li>启动gdb</li><li>连接至JLinkGDBServer对应的GDB port</li><li>load可执行文件</li></ul></li></ol><h1 id="图形化调试"><a href="#图形化调试" class="headerlink" title="图形化调试"></a>图形化调试</h1><ol><li>可以使用CLion实现图形化调试</li></ol><h1 id="多核调试"><a href="#多核调试" class="headerlink" title="多核调试"></a>多核调试</h1><ol><li>使用openocd替换JLinkGDBServer<ul><li>转换jlink驱动</li><li>建立openocd.cfg，可以参考raspi的相关调试配置</li></ul></li></ol>]]></content>
+    
+    
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>can调试记录</title>
     <link href="/2026/07/13/can%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/"/>
     <url>/2026/07/13/can%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/</url>
