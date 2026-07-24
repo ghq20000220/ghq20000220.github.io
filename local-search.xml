@@ -4,6 +4,19 @@
   
   
   <entry>
+    <title>JFlash OpenFlashLoader</title>
+    <link href="/2026/07/24/JFlash-OpenFlashLoader/"/>
+    <url>/2026/07/24/JFlash-OpenFlashLoader/</url>
+    
+    <content type="html"><![CDATA[]]></content>
+    
+    
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>网络原理</title>
     <link href="/2026/07/23/%E7%BD%91%E7%BB%9C%E5%8E%9F%E7%90%86/"/>
     <url>/2026/07/23/%E7%BD%91%E7%BB%9C%E5%8E%9F%E7%90%86/</url>
@@ -30,11 +43,24 @@
   
   
   <entry>
+    <title>Hello World</title>
+    <link href="/2026/07/15/hello-world/"/>
+    <url>/2026/07/15/hello-world/</url>
+    
+    <content type="html"><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">$ hexo new <span class="hljs-string">&quot;My New Post&quot;</span><br></code></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p><h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">$ hexo server<br></code></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p><h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">$ hexo generate<br></code></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p><h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">$ hexo deploy<br></code></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>]]></content>
+    
+    
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>can调试记录</title>
     <link href="/2026/07/13/can%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/"/>
     <url>/2026/07/13/can%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/</url>
     
-    <content type="html"><![CDATA[<h1 id="主要问题和解决思路"><a href="#主要问题和解决思路" class="headerlink" title="主要问题和解决思路"></a>主要问题和解决思路</h1><pre><code class="hljs">1. 模拟源can，互连收发测试正常2. soc can0外部自回环正常3. soc收不到模拟源的数据（确认soc会操作can总线进行发送）4. 模拟源收不到soc数据（确认模拟源会操作can总线进行发送）5. 进行soc can0、1互连测试，确认状态。0发1收状态下，收发正常5. 怀疑总线实际速率不对，怎么便于测试？7. 模拟源can实测速率一个bit 4.099us8. soc can实测速率一个bit 5.032us，与实际速率不匹配9. 翻阅手册，查得F_PRESC_SJW_SEG参数配置不对，分频系数和seg1,seg2,swj配置错误10. 修改F_PRESC_SJW_SEG配置，再测soc can一个bit 4.011us，基本匹配</code></pre><h1 id="反思"><a href="#反思" class="headerlink" title="反思"></a>反思</h1><pre><code class="hljs">1. 应当及时向仿真同事确认速率问题</code></pre><h1 id="其它问题"><a href="#其它问题" class="headerlink" title="其它问题"></a>其它问题</h1><pre><code class="hljs">1. soc can发数据，总线上没有波形，此时通过can寄存器可发现，出现bit错误的标志;后续硬件确认为器件损坏，修复后可发送数据，can总线有波形；</code></pre><p><img src="/2026/07/13/can%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/can_bit_error.JPG" alt="can bit err"></p><pre><code class="hljs">2. soc和模拟源互联，soc发送时，由于速率不同，导致模拟源没有ack回应时。can寄存器有ack err</code></pre><p><img src="/2026/07/13/can%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/can_ack_err.JPG" alt="can ack err"></p><h1 id="速率配置"><a href="#速率配置" class="headerlink" title="速率配置"></a>速率配置</h1><pre><code class="hljs">1. 一个Bit Time被分为多个TQ，TQ作为最小的控制单元，决定seg1和seg2的事件，Bit Time = t(seg1)+t(seg2)</code></pre><p><img src="/2026/07/13/can%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/normal_bit_time.JPG" alt="bit time"><br>    2. t(seg1)等对应的TQ范围限制<br><img src="/2026/07/13/can%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/tq%E9%99%90%E5%88%B6.JPG" alt="tq 限制"><br>    3. 注意t(seg1)&#x3D;(S_Seg_1+2)*TQ， <strong>S_Seg_1</strong> 是要写入寄存器中的值</p>]]></content>
+    <content type="html"><![CDATA[<h1 id="主要问题和解决思路"><a href="#主要问题和解决思路" class="headerlink" title="主要问题和解决思路"></a>主要问题和解决思路</h1><pre><code class="hljs">1. 模拟源can，互连收发测试正常2. soc can0外部自回环正常3. soc收不到模拟源的数据（确认soc会操作can总线进行发送）4. 模拟源收不到soc数据（确认模拟源会操作can总线进行发送）5. 进行soc can0、1互连测试，确认状态。0发1收状态下，收发正常5. 怀疑总线实际速率不对，怎么便于测试？7. 模拟源can实测速率一个bit 4.099us8. soc can实测速率一个bit 5.032us，与实际速率不匹配9. 翻阅手册，查得F_PRESC_SJW_SEG参数配置不对，分频系数和seg1,seg2,swj配置错误10. 修改F_PRESC_SJW_SEG配置，再测soc can一个bit 4.011us，基本匹配</code></pre><h1 id="反思"><a href="#反思" class="headerlink" title="反思"></a>反思</h1><pre><code class="hljs">1. 应当及时向仿真同事确认速率问题后续：经过仿真确认，速率不对；修改驱动后再仿真，速率率正确</code></pre><h1 id="其它问题"><a href="#其它问题" class="headerlink" title="其它问题"></a>其它问题</h1><pre><code class="hljs">1. soc can发数据，总线上没有波形，此时通过can寄存器可发现，出现bit错误的标志;后续硬件确认为器件损坏，修复后可发送数据，can总线有波形；</code></pre><p><img src="/2026/07/13/can%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/can_bit_error.JPG" alt="can bit err"></p><pre><code class="hljs">2. soc和模拟源互联，soc发送时，由于速率不同，导致模拟源没有ack回应时。can寄存器有ack err</code></pre><p><img src="/2026/07/13/can%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/can_ack_err.JPG" alt="can ack err"></p><h1 id="速率配置"><a href="#速率配置" class="headerlink" title="速率配置"></a>速率配置</h1><pre><code class="hljs">1. 一个Bit Time被分为多个TQ，TQ作为最小的控制单元，决定seg1和seg2的时间，Bit Time = t(seg1)+t(seg2)</code></pre><p><img src="/2026/07/13/can%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/normal_bit_time.JPG" alt="bit time"><br>    2. t(seg1)等对应的TQ范围限制<br><img src="/2026/07/13/can%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/tq%E9%99%90%E5%88%B6.JPG" alt="tq 限制"><br>    3. 注意t(seg1)&#x3D;(S_Seg_1+2)*TQ， <strong>S_Seg_1</strong> 是要写入寄存器中的值</p>]]></content>
     
     
     
@@ -48,19 +74,6 @@
     <url>/2026/07/13/first-blog/</url>
     
     <content type="html"><![CDATA[<h1 id="环境（windows版本）"><a href="#环境（windows版本）" class="headerlink" title="环境（windows版本）"></a>环境（windows版本）</h1><ol><li><p>git安装</p><ul><li>官方地址：<a href="https://git-scm.cn/install/windows">https://git-scm.cn/install/windows</a></li><li>安装后使用cmd或git bash输入<code>git -v</code>，输出版本，说明安装成功<br> <img src="/2026/07/13/first-blog/git_v.JPG" alt="git version"></li></ul></li><li><p>nodejs安装</p><ul><li>官方地址：<a href="https://nodejs.org/en/download/">https://nodejs.org/en/download/</a></li><li><code>node -v</code>，显示版本说明成功安装<br> <img src="/2026/07/13/first-blog/node_v.JPG" alt="node version"></li></ul></li><li><p>Hexo安装</p><ul><li><code>npm install hexo -g</code></li><li><code>hexo -v</code>，测试安装状态<br> <img src="/2026/07/13/first-blog/hexo_v.JPG" alt="Hexo version"></li></ul></li><li><p>在blog仓库文件夹下安装Hexo依赖</p><ul><li><code>npm install --save hexo-deployer-git</code></li></ul></li></ol><h1 id="git-ssh配置"><a href="#git-ssh配置" class="headerlink" title="git ssh配置"></a>git ssh配置</h1><ol><li><p>生成ssh key</p><ul><li><code>ssh-keygen -t rsa -C &quot;邮件地址&quot;</code> ，连续回车。生成的内容在id_rsa.pub中</li></ul></li><li><p>将ssh key加入githu中</p><ul><li>使用<code>ssh -T git@github.com</code>测试ssh key的状态<br> <img src="/2026/07/13/first-blog/ssh_test.JPG" alt="ssh test"></li></ul></li><li><p>配置git user.name user.email</p></li></ol><figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs stylus">$ git config <span class="hljs-attr">--global</span> user<span class="hljs-selector-class">.name</span> <span class="hljs-string">&quot;你的github用户名&quot;</span><br>$ git config <span class="hljs-attr">--global</span> user<span class="hljs-selector-class">.email</span> <span class="hljs-string">&quot;你的github注册邮箱&quot;</span><br></code></pre></td></tr></table></figure><h1 id="初始化blog仓库"><a href="#初始化blog仓库" class="headerlink" title="初始化blog仓库"></a>初始化blog仓库</h1><ol><li>初始化blog目录<ul><li>hexo init</li><li>可能会出现git clone失败问题</li><li>可能会出现npm install安装卡住问题，可替换npm源</li></ul></li><li>生成静态网页: <code>hexo g</code></li><li>预览网页: <code>hexo s</code></li><li>发布至github: <code>hexo d</code></li></ol><h1 id="编写blog"><a href="#编写blog" class="headerlink" title="编写blog"></a>编写blog</h1><ol><li>新建blog<ul><li><code>hexo new &#39;blog-name&#39;</code></li></ul></li></ol><h1 id="bug合集"><a href="#bug合集" class="headerlink" title="bug合集"></a>bug合集</h1><ol><li>hexo 安装后，无法正常显示图片，需要安装插件</li></ol><figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs awk">npm install https:<span class="hljs-regexp">//gi</span>thub.com<span class="hljs-regexp">/CodeFalling/</span>hexo-asset-image -- save<br></code></pre></td></tr></table></figure>]]></content>
-    
-    
-    
-  </entry>
-  
-  
-  
-  <entry>
-    <title>Hello World</title>
-    <link href="/2026/07/13/hello-world/"/>
-    <url>/2026/07/13/hello-world/</url>
-    
-    <content type="html"><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p><h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p><h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p><h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>]]></content>
     
     
     
