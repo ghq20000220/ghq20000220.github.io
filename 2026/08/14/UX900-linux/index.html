@@ -19,25 +19,21 @@
   <meta name="author" content="baimochun">
   <meta name="keywords" content="">
   
-    <meta name="description" content="J-Flash是SEGGER推出的通过J-Link对Flash进行烧录的工具，内置多款主流芯片和存储器。且支持自定义芯片和烧录算法，提供了高灵活性 使用说明目标：通过自定义设备和烧录算法，实现对片外Flash的编程 J-Flash基本原理 主机端运行J-Flash，通过J-Link作为硬件桥梁，控制目标板上的cpu通过spi，qspi等方式对外部flash进行编程  PC上通过J-Flash的图形">
+    <meta name="description" content="在nuclei UX900 cpu上运行linux时遇到问题 未解决。在此记录 环境 board：UX900 4core + uart + eth ubuntu：版本20.04 + NFS（作为server用于挂载网络文件系统） + FTP（用于传输linux内核）  现象 PASS: 单核 + 本地文件系统 PASS: 单核 + NFS文件系统 PASS: 多核 + 本地文件系统 FAIL: 多">
 <meta property="og:type" content="article">
-<meta property="og:title" content="JFlash OpenFlashLoader">
-<meta property="og:url" content="https://blog.baimochun.xyz/2026/07/24/JFlash-OpenFlashLoader/index.html">
+<meta property="og:title" content="UX900 linux">
+<meta property="og:url" content="https://blog.baimochun.xyz/2026/08/14/UX900-linux/index.html">
 <meta property="og:site_name" content="baimochun">
-<meta property="og:description" content="J-Flash是SEGGER推出的通过J-Link对Flash进行烧录的工具，内置多款主流芯片和存储器。且支持自定义芯片和烧录算法，提供了高灵活性 使用说明目标：通过自定义设备和烧录算法，实现对片外Flash的编程 J-Flash基本原理 主机端运行J-Flash，通过J-Link作为硬件桥梁，控制目标板上的cpu通过spi，qspi等方式对外部flash进行编程  PC上通过J-Flash的图形">
+<meta property="og:description" content="在nuclei UX900 cpu上运行linux时遇到问题 未解决。在此记录 环境 board：UX900 4core + uart + eth ubuntu：版本20.04 + NFS（作为server用于挂载网络文件系统） + FTP（用于传输linux内核）  现象 PASS: 单核 + 本地文件系统 PASS: 单核 + NFS文件系统 PASS: 多核 + 本地文件系统 FAIL: 多">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://blog.baimochun.xyz/2026/07/24/JFlash-OpenFlashLoader/%E8%BF%9E%E6%8E%A5%E7%BB%93%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE.JPG">
-<meta property="og:image" content="https://blog.baimochun.xyz/2026/07/24/JFlash-OpenFlashLoader/target_device.JPG">
-<meta property="og:image" content="https://blog.baimochun.xyz/2026/07/24/JFlash-OpenFlashLoader/temp.JPG">
-<meta property="article:published_time" content="2026-07-24T00:54:36.000Z">
-<meta property="article:modified_time" content="2026-08-14T06:39:53.748Z">
+<meta property="article:published_time" content="2026-08-14T07:40:36.000Z">
+<meta property="article:modified_time" content="2026-08-14T07:41:00.214Z">
 <meta property="article:author" content="baimochun">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://blog.baimochun.xyz/2026/07/24/JFlash-OpenFlashLoader/%E8%BF%9E%E6%8E%A5%E7%BB%93%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE.JPG">
   
   
   
-  <title>JFlash OpenFlashLoader - baimochun</title>
+  <title>UX900 linux - baimochun</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -306,7 +302,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="JFlash OpenFlashLoader"></span>
+            <span id="subtitle" data-typed-text="UX900 linux"></span>
           
         </div>
 
@@ -317,8 +313,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2026-07-24 08:54" pubdate>
-          2026年7月24日 早上
+        <time datetime="2026-08-14 15:40" pubdate>
+          2026年8月14日 下午
         </time>
       </span>
     
@@ -329,7 +325,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          3.7k 字
+          338 字
         
       </span>
     
@@ -340,7 +336,7 @@
         
         
         
-          31 分钟
+          3 分钟
         
       </span>
     
@@ -379,48 +375,31 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">JFlash OpenFlashLoader</h1>
+            <h1 id="seo-header">UX900 linux</h1>
             
             
               <div class="markdown-body">
                 
-                <p>J-Flash是SEGGER推出的通过J-Link对Flash进行烧录的工具，内置多款主流芯片和存储器。且支持自定义芯片和烧录算法，提供了高灵活性</p>
-<h1 id="使用说明"><a href="#使用说明" class="headerlink" title="使用说明"></a>使用说明</h1><p>目标：通过自定义设备和烧录算法，实现对片外Flash的编程</p>
-<h2 id="J-Flash基本原理"><a href="#J-Flash基本原理" class="headerlink" title="J-Flash基本原理"></a>J-Flash基本原理</h2><p><img src="/2026/07/24/JFlash-OpenFlashLoader/%E8%BF%9E%E6%8E%A5%E7%BB%93%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE.JPG" srcset="/img/loading.gif" lazyload alt="硬件结构"></p>
-<p>主机端运行J-Flash，通过J-Link作为硬件桥梁，控制目标板上的cpu通过spi，qspi等方式对外部flash进行编程</p>
-<ul>
-<li>PC上通过J-Flash的图形界面下达烧录指令</li>
-<li>J-Flash会通过J-Link，将flash烧录算法下载到Board上的RAM中</li>
-<li>J-Flash通过J-Link控制CPU，将PC端传输过来的数据，逐步写入到flash中</li>
+                <p>在nuclei UX900 cpu上运行linux时遇到问题 未解决。在此记录</p>
+<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><ol>
+<li>board：UX900 4core + uart + eth</li>
+<li>ubuntu：版本20.04 + NFS（作为server用于挂载网络文件系统） + FTP（用于传输linux内核）</li>
+</ol>
+<h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><ul>
+<li>PASS: 单核 + 本地文件系统</li>
+<li>PASS: 单核 + NFS文件系统</li>
+<li>PASS: 多核 + 本地文件系统</li>
+<li>FAIL: 多核 + NFS文件系统</li>
 </ul>
-<h2 id="添加自定义设备"><a href="#添加自定义设备" class="headerlink" title="添加自定义设备"></a>添加自定义设备</h2><p>在运行segger jlink，jflash等软件时，一般都会需要选择Target Device。<br><img src="/2026/07/24/JFlash-OpenFlashLoader/target_device.JPG" srcset="/img/loading.gif" lazyload alt="设备选择"></p>
-<p>实现参考<a target="_blank" rel="noopener" href="https://kb.segger.com/J-Link_Device_Support_Kit">J-Link_Device_Support_Kit</a></p>
 <ol>
-<li>文件等存放路径 C:\Users&lt;USER&gt;\AppData\Roaming\SEGGER\JLinkDevices<br>当C:\Users&lt;USER&gt;\AppData\Roaming\SEGGER目录下没有JLinkDevices目录时建立目录即可</li>
-<li>在JLinkDevices下建立Devices.xml文件，示例如下</li>
+<li>内核版本为<a target="_blank" rel="noopener" href="https://gitee.com/Nuclei-Software/nuclei-linux-sdk/tree/dev_nuclei_5.10_v3/">dev_nuclei_5.10_v3</a>时，表现为NFS挂载后卡死，且没有任何打印信息</li>
+<li>内核版本为<a target="_blank" rel="noopener" href="https://gitee.com/Nuclei-Software/nuclei-linux-sdk/tree/dev_nuclei_6.18_v3/">dev_nuclei_6.18_v3</a>时，表现为NFS挂载后出现kernel panic，有概率系统会启动，可以输入用户密码进入系统，大概率在多次kernel panic后挂掉</li>
 </ol>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Database</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">Device</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">ChipInfo</span> <span class="hljs-attr">Vendor</span>=<span class="hljs-string">&quot;SEGGER&quot;</span> <span class="hljs-attr">Name</span>=<span class="hljs-string">&quot;SEGGER_Device0&quot;</span> <span class="hljs-attr">Core</span>=<span class="hljs-string">&quot;JLINK_CORE_CORTEX_M0&quot;</span>/&gt;</span><br>  <span class="hljs-tag">&lt;/<span class="hljs-name">Device</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">Device</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">ChipInfo</span> <span class="hljs-attr">Vendor</span>=<span class="hljs-string">&quot;SEGGER&quot;</span> <span class="hljs-attr">Name</span>=<span class="hljs-string">&quot;SEGGER_Device1&quot;</span> <span class="hljs-attr">Core</span>=<span class="hljs-string">&quot;JLINK_CORE_CORTEX_M4&quot;</span>/&gt;</span><br>  <span class="hljs-tag">&lt;/<span class="hljs-name">Device</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">Database</span>&gt;</span><br></code></pre></td></tr></table></figure>
-<ol start="3">
-<li>当需要J-Link script file时，在xml中指定(JLinkScriptFile&#x3D;”SEGGER&#x2F;Example.jlinkscript”)，示例如下</li>
+<h2 id="怀疑方向"><a href="#怀疑方向" class="headerlink" title="怀疑方向"></a>怀疑方向</h2><ol>
+<li>多核cache一致性</li>
+<li>以太网稳定性，误码？</li>
 </ol>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Database</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">Device</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">ChipInfo</span> <span class="hljs-attr">Vendor</span>=<span class="hljs-string">&quot;SEGGER&quot;</span> <span class="hljs-attr">Name</span>=<span class="hljs-string">&quot;SEGGER_Device0&quot;</span> <span class="hljs-attr">Core</span>=<span class="hljs-string">&quot;JLINK_CORE_CORTEX_M0&quot;</span> <span class="hljs-attr">JLinkScriptFile</span>=<span class="hljs-string">&quot;SEGGER/Example.jlinkscript&quot;</span>/&gt;</span><br>  <span class="hljs-tag">&lt;/<span class="hljs-name">Device</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">Database</span>&gt;</span><br></code></pre></td></tr></table></figure>
-<ol start="4">
-<li>指定flash信息和对应的烧录算法，示例如下</li>
-</ol>
-<figure class="highlight abnf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs abnf">&lt;Database&gt;<br>  &lt;Device&gt;<br>    &lt;ChipInfo Vendor<span class="hljs-operator">=</span><span class="hljs-string">&quot;SEGGER&quot;</span> Name<span class="hljs-operator">=</span><span class="hljs-string">&quot;SEGGER_Device0&quot;</span> WorkRAMAddr<span class="hljs-operator">=</span><span class="hljs-string">&quot;0x20000000&quot;</span> WorkRAMSize<span class="hljs-operator">=</span><span class="hljs-string">&quot;0x8000&quot;</span> Core<span class="hljs-operator">=</span><span class="hljs-string">&quot;JLINK_CORE_CORTEX_M4&quot;</span> /&gt;<br>    &lt;FlashBankInfo Name<span class="hljs-operator">=</span><span class="hljs-string">&quot;Internal code flash&quot;</span> BaseAddr<span class="hljs-operator">=</span><span class="hljs-string">&quot;0x08000000&quot;</span> AlwaysPresent<span class="hljs-operator">=</span><span class="hljs-string">&quot;1&quot;</span> &gt;<br>      &lt;LoaderInfo Name<span class="hljs-operator">=</span><span class="hljs-string">&quot;Default&quot;</span> MaxSize<span class="hljs-operator">=</span><span class="hljs-string">&quot;0x80000&quot;</span> Loader<span class="hljs-operator">=</span><span class="hljs-string">&quot;Flashloader_Device0_InternalCodeFlash.elf&quot;</span> LoaderType<span class="hljs-operator">=</span><span class="hljs-string">&quot;FLASH_ALGO_TYPE_OPEN&quot;</span> /&gt;<br>    &lt;/FlashBankInfo&gt;<br>  &lt;/Device&gt;<br>&lt;/Database&gt;<br></code></pre></td></tr></table></figure>
-<ol start="5">
-<li>示例</li>
-</ol>
-<figure class="highlight abnf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs abnf">&lt;Database&gt;<br>  &lt;Device&gt;<br>    &lt;ChipInfo Vendor<span class="hljs-operator">=</span><span class="hljs-string">&quot;Heimda&quot;</span> Name<span class="hljs-operator">=</span><span class="hljs-string">&quot;Heimda&quot;</span> WorkRAMAddr<span class="hljs-operator">=</span><span class="hljs-string">&quot;0x2000000&quot;</span> WorkRAMSize<span class="hljs-operator">=</span><span class="hljs-string">&quot;0x100000&quot;</span> Core<span class="hljs-operator">=</span><span class="hljs-string">&quot;JLINK_CORE_CORTEX_A53&quot;</span> JLinkScriptFile<span class="hljs-operator">=</span><span class="hljs-string">&quot;A53.jlinkscript&quot;</span> /&gt;<br>    &lt;FlashBankInfo Name<span class="hljs-operator">=</span><span class="hljs-string">&quot;AT25DQ041&quot;</span> BaseAddr<span class="hljs-operator">=</span><span class="hljs-string">&quot;0x00000000&quot;</span> AlwaysPresent<span class="hljs-operator">=</span><span class="hljs-string">&quot;1&quot;</span> &gt;<br>      &lt;LoaderInfo Name<span class="hljs-operator">=</span><span class="hljs-string">&quot;SPI0 FLASH&quot;</span> MaxSize<span class="hljs-operator">=</span><span class="hljs-string">&quot;0x100000&quot;</span> Loader<span class="hljs-operator">=</span><span class="hljs-string">&quot;Heimda_Test.elf&quot;</span> LoaderType<span class="hljs-operator">=</span><span class="hljs-string">&quot;FLASH_ALGO_TYPE_OPEN&quot;</span> /&gt;<br>    &lt;/FlashBankInfo&gt;<br><br>    &lt;FlashBankInfo Name<span class="hljs-operator">=</span><span class="hljs-string">&quot;AT25DQ041&quot;</span> BaseAddr<span class="hljs-operator">=</span><span class="hljs-string">&quot;0x00000000&quot;</span> AlwaysPresent<span class="hljs-operator">=</span><span class="hljs-string">&quot;1&quot;</span> &gt;<br>      &lt;LoaderInfo Name<span class="hljs-operator">=</span><span class="hljs-string">&quot;SPI1 FLASH&quot;</span> MaxSize<span class="hljs-operator">=</span><span class="hljs-string">&quot;0x100000&quot;</span> Loader<span class="hljs-operator">=</span><span class="hljs-string">&quot;Heimda_Test.elf&quot;</span> LoaderType<span class="hljs-operator">=</span><span class="hljs-string">&quot;FLASH_ALGO_TYPE_OPEN&quot;</span> /&gt;<br>    &lt;/FlashBankInfo&gt;<br>  &lt;/Device&gt;<br>&lt;/Database&gt;<br></code></pre></td></tr></table></figure>
-<p><img src="/2026/07/24/JFlash-OpenFlashLoader/temp.JPG" srcset="/img/loading.gif" lazyload alt="temp"></p>
-<h2 id="Open-Flash-Loader"><a href="#Open-Flash-Loader" class="headerlink" title="Open Flash Loader"></a>Open Flash Loader</h2><p><a target="_blank" rel="noopener" href="https://kb.segger.com/SEGGER_Flash_Loader">flash下载算法实现参考</a><br>我们通过Open Flash Loader示例进行修改，实现自定义flash下载算法</p>
-<p><a target="_blank" rel="noopener" href="https://github.com/404Zen/SFL/tree/master">工程示例</a></p>
-<ol>
-<li>需要实现指定的函数功能</li>
-<li>需要按照指定的代码布局进行链接</li>
-<li>注意变量的类型，在变量类型不对时可能出现奇怪的问题</li>
-</ol>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-keyword">struct</span> <span class="hljs-title class_">FlashDevice</span>  &#123;<br>  <span class="hljs-type">uint16_t</span> AlgoVer;<br>  <span class="hljs-type">uint8_t</span>  Name[<span class="hljs-number">128</span>];<br>  <span class="hljs-type">uint16_t</span> Type;                    <span class="hljs-comment">// Flash device type. Currently ignored. Set to 1 to get max. compatibility.</span><br>  <span class="hljs-type">uint32_t</span> BaseAddr;                <span class="hljs-comment">// Flash base address. It is recommended to always use the real address of the flash here, even if the flash is also available at other addresses (via an alias / remap), depending on the current settings of the device.</span><br>  <span class="hljs-type">uint32_t</span> TotalSize;               <span class="hljs-comment">// Total flash device size in bytes.</span><br>  <span class="hljs-type">uint32_t</span> PageSize;                <span class="hljs-comment">// This field describes in what chunks J-Link feeds the flash loader.</span><br>  <span class="hljs-type">uint32_t</span> Reserved;                <span class="hljs-comment">// 	Set this element to 0</span><br>  <span class="hljs-type">uint8_t</span>  ErasedVal;               <span class="hljs-comment">// Most flashes have an erased value of 0xFF (set this element to 0xFF in such cases).</span><br>  <span class="hljs-type">uint32_t</span> TimeoutProg;             <span class="hljs-comment">// Timeout in milliseconds (ms) to program one chunk of &lt;PageSize&gt;.</span><br>  <span class="hljs-type">uint32_t</span> TimeoutErase;            <span class="hljs-comment">// Timeout in milliseconds (ms) to erase one sector.</span><br>  <span class="hljs-keyword">struct</span> <span class="hljs-title class_">SECTOR_INFO</span> SectorInfo[MAX_NUM_SECTORS];       <span class="hljs-comment">// 	This element is actually a list of different sector sizes present on target flash.Having a flash with uniform sectors will result in only SectorInfo[0] being used for sectorization information.</span><br>&#125;;<br></code></pre></td></tr></table></figure>
+
                 
               </div>
             
@@ -437,8 +416,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>JFlash OpenFlashLoader</div>
-      <div>https://blog.baimochun.xyz/2026/07/24/JFlash-OpenFlashLoader/</div>
+      <div>UX900 linux</div>
+      <div>https://blog.baimochun.xyz/2026/08/14/UX900-linux/</div>
     </div>
     <div class="license-meta">
       
@@ -450,7 +429,7 @@
       
         <div class="license-meta-item license-meta-date">
           <div>发布于</div>
-          <div>2026年7月24日</div>
+          <div>2026年8月14日</div>
         </div>
       
       
@@ -482,18 +461,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2026/08/06/UX900-linux/" title="UX900 linux">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">UX900 linux</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2026/07/23/%E7%BD%91%E7%BB%9C%E5%8E%9F%E7%90%86/" title="网络原理">
-                        <span class="hidden-mobile">网络原理</span>
+                      <a href="/2026/08/14/JFlash-OpenFlashLoader/" title="JFlash OpenFlashLoader">
+                        <span class="hidden-mobile">JFlash OpenFlashLoader</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
