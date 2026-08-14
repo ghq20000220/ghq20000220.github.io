@@ -4,24 +4,11 @@
   
   
   <entry>
-    <title>DWC xgmac</title>
-    <link href="/2026/08/12/DWC-xgmac/"/>
-    <url>/2026/08/12/DWC-xgmac/</url>
-    
-    <content type="html"><![CDATA[<h1 id="dw-xgmac使用记录"><a href="#dw-xgmac使用记录" class="headerlink" title="dw xgmac使用记录"></a>dw xgmac使用记录</h1><h2 id="典型结构介绍"><a href="#典型结构介绍" class="headerlink" title="典型结构介绍"></a>典型结构介绍</h2><p><img src="/2026/08/12/DWC-xgmac/xgmac%E7%BB%93%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE.JPG" alt="xgmac结构"></p><p>从典型结构图可以看出，xgmac接口部分由MAC、PCS和PMA组成</p><ul><li>PMA层：利用SerDes技术实现，实现数据的串并转换</li><li>PCS层：实现编解码，扰码&#x2F;解扰。对MAC层的数据进行信道编码等</li><li>MAC层：由XGMAC-AXI，XGMAC-MTL，XGMAC-CORE组成</li></ul><h2 id="uboot-mac初始化"><a href="#uboot-mac初始化" class="headerlink" title="uboot mac初始化"></a>uboot mac初始化</h2><ul><li>xgmac reset后自动清零。置位时复位mac逻辑电路。此处等待复位完成</li></ul><figure class="highlight xl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs xl"><span class="hljs-function"><span class="hljs-title">ret</span> = wait_for_bit_le32(&amp;xgmac-&gt;</span><span class="hljs-function"><span class="hljs-title">dma_regs</span>-&gt;</span>mode,<br>                        XGMAC_DMA_MODE_SWR, <span class="hljs-literal">false</span>,<br>                        <span class="hljs-function"><span class="hljs-title">xgmac</span>-&gt;</span><span class="hljs-function"><span class="hljs-title">config</span>-&gt;</span>swr_wait, <span class="hljs-literal">false</span>);<br></code></pre></td></tr></table></figure><ul><li>配置mtl txq0, 使能tx queue 0；配置Transmit Store and Forward，当MTL中存在完整数据包时开始传输，忽略队列的阈值配置</li></ul><figure class="highlight xl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs xl"><span class="hljs-function"><span class="hljs-title">setbits_le32</span>(&amp;xgmac-&gt;</span><span class="hljs-function"><span class="hljs-title">mtl_regs</span>-&gt;</span>txq0_operation_mode,<br>     XGMAC_MTL_TXQ0_OPERATION_MODE_TSF |<br>     (XGMAC_MTL_TXQ0_OPERATION_MODE_TXQEN_ENABLED <span class="hljs-string">&lt;&lt;</span><br><span class="hljs-string">      XGMAC_MTL_TXQ0_OPERATION_MODE_TXQEN_SHIFT));</span><br></code></pre></td></tr></table></figure><ul><li>tx queue权重配置</li></ul><figure class="highlight xl"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs xl"><span class="hljs-function"><span class="hljs-title">writel</span>(0x10, &amp;xgmac-&gt;</span><span class="hljs-function"><span class="hljs-title">mtl_regs</span>-&gt;</span>txq0_quantum_weight);<br></code></pre></td></tr></table></figure><ul><li>rx queue SF</li></ul><figure class="highlight xl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs xl"><span class="hljs-function"><span class="hljs-title">setbits_le32</span>(&amp;xgmac-&gt;</span><span class="hljs-function"><span class="hljs-title">mtl_regs</span>-&gt;</span>rxq0_operation_mode,<br>     XGMAC_MTL_RXQ0_OPERATION_MODE_RSF);<br></code></pre></td></tr></table></figure><ul><li>读取硬件feature，确定fifo size</li><li>配置tx rx queue size，这里配置为fifo的最大值，fifo的空间都给queue0使用</li><li></li></ul>]]></content>
-    
-    
-    
-  </entry>
-  
-  
-  
-  <entry>
     <title>UX900 linux</title>
     <link href="/2026/08/06/UX900-linux/"/>
     <url>/2026/08/06/UX900-linux/</url>
     
-    <content type="html"><![CDATA[<p>在nuclei UX900 cpu上运行linux时遇到问题 未解决。在此记录</p><h1 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h1><ol><li>board：UX900 4core + uart + eth</li><li>ubuntu：版本20.04，+ NFS（作为server用于挂载网络文件系统） + FTP（用于传输linux内核）</li></ol><h1 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h1><ul><li>PASS: 单核 + 本地文件系统</li><li>PASS: 单核 + NFS文件系统</li><li>PASS: 多核 + 本地文件系统</li><li>FAIL: 多核 + NFS文件系统</li></ul>]]></content>
+    <content type="html"><![CDATA[<p>在nuclei UX900 cpu上运行linux时遇到问题 未解决。在此记录</p><h1 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h1><ol><li>board：UX900 4core + uart + eth</li><li>ubuntu：版本20.04 + NFS（作为server用于挂载网络文件系统） + FTP（用于传输linux内核）</li></ol><h1 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h1><ul><li>PASS: 单核 + 本地文件系统</li><li>PASS: 单核 + NFS文件系统</li><li>PASS: 多核 + 本地文件系统</li><li>FAIL: 多核 + NFS文件系统</li></ul><ol><li>内核版本为<a href="https://gitee.com/Nuclei-Software/nuclei-linux-sdk/tree/dev_nuclei_5.10_v3/">dev_nuclei_5.10_v3</a>时，表现为NFS挂载后卡死，且没有任何打印信息</li><li>内核版本为<a href="https://gitee.com/Nuclei-Software/nuclei-linux-sdk/tree/dev_nuclei_6.18_v3/">dev_nuclei_6.18_v3</a>时，表现为NFS挂载后出现kernel panic，有概率系统会启动，可以输入用户密码进入系统，大概率在多次kernel panic后挂掉</li></ol><h1 id="怀疑方向"><a href="#怀疑方向" class="headerlink" title="怀疑方向"></a>怀疑方向</h1><ol><li>多核cache一致性</li><li>以太网稳定性，误码？</li></ol>]]></content>
     
     
     
