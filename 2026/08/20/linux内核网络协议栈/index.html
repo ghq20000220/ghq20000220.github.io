@@ -1,0 +1,921 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="baimochun">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="环境 linux version: 5.10.237 以太网驱动：stmmac xgmac（dw xgmac）  架构概览收发数据包过程中断上半部、下半部中断上半部又叫硬中断，是通常意义上的中断处理程序。在关中断的状态下处理，不可被中断简单理解为:由request_irq注册的处理函数，称为中断上半部 中断下半部处理中断中的耗时，非紧急任务。在开中断状态下处理，可被中断  中断下半部的具体实现主要">
+<meta property="og:type" content="article">
+<meta property="og:title" content="linux内核网络协议栈">
+<meta property="og:url" content="https://blog.baimochun.xyz/2026/08/20/linux%E5%86%85%E6%A0%B8%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88/index.html">
+<meta property="og:site_name" content="baimochun">
+<meta property="og:description" content="环境 linux version: 5.10.237 以太网驱动：stmmac xgmac（dw xgmac）  架构概览收发数据包过程中断上半部、下半部中断上半部又叫硬中断，是通常意义上的中断处理程序。在关中断的状态下处理，不可被中断简单理解为:由request_irq注册的处理函数，称为中断上半部 中断下半部处理中断中的耗时，非紧急任务。在开中断状态下处理，可被中断  中断下半部的具体实现主要">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-08-20T05:55:53.000Z">
+<meta property="article:modified_time" content="2026-08-21T07:43:22.939Z">
+<meta property="article:author" content="baimochun">
+<meta property="article:tag" content="NAPI">
+<meta property="article:tag" content="bottom-half">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="top-half">
+<meta property="article:tag" content="以太网">
+<meta property="article:tag" content="软中断">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>linux内核网络协议栈 - baimochun</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"blog.baimochun.xyz","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="linux内核网络协议栈"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-08-20 13:55" pubdate>
+          2026年8月20日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          20k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          165 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">linux内核网络协议栈</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h1><ol>
+<li>linux version: 5.10.237</li>
+<li>以太网驱动：stmmac xgmac（dw xgmac）</li>
+</ol>
+<h1 id="架构概览"><a href="#架构概览" class="headerlink" title="架构概览"></a>架构概览</h1><h1 id="收发数据包过程"><a href="#收发数据包过程" class="headerlink" title="收发数据包过程"></a>收发数据包过程</h1><h2 id="中断上半部、下半部"><a href="#中断上半部、下半部" class="headerlink" title="中断上半部、下半部"></a>中断上半部、下半部</h2><h3 id="中断上半部"><a href="#中断上半部" class="headerlink" title="中断上半部"></a>中断上半部</h3><p>又叫硬中断，是通常意义上的中断处理程序。在关中断的状态下处理，不可被中断<br>简单理解为:由request_irq注册的处理函数，称为中断上半部</p>
+<h3 id="中断下半部"><a href="#中断下半部" class="headerlink" title="中断下半部"></a>中断下半部</h3><p>处理中断中的耗时，非紧急任务。在开中断状态下处理，可被中断</p>
+<ul>
+<li>中断下半部的具体实现主要有三种机制：软中断，Tasklet，work queue</li>
+</ul>
+<h2 id="软中断"><a href="#软中断" class="headerlink" title="软中断"></a>软中断</h2><p>软中断是中断下半部机制的其中一种实现<br>软中断的触发（执行时机）：  </p>
+<ol>
+<li><p>快速路径，每次有硬件中断，硬中断处理结束后<strong>irq_exit</strong>中会调用 __do_softirq，以riscv为例</p>
+<ul>
+<li>linux&#x2F;arch&#x2F;riscv&#x2F;kernel&#x2F;head.S中，将handle_exception设置为中断和异常的入口  <figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs mipsasm">la <span class="hljs-built_in">a0</span>, handle_exception<br>csrw CSR_TVEC, <span class="hljs-built_in">a0</span><br></code></pre></td></tr></table></figure></li>
+<li>linux&#x2F;arch&#x2F;riscv&#x2F;kernel&#x2F;entry.S， handle_exception中，handle_arch_irq为处理中断的部分。<br> riscv_intc_init中<strong>set_handle_irq</strong>将handle_arch_irq配置为riscv_intc_irq。  <figure class="highlight wren"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><code class="hljs wren"><span class="hljs-keyword">static</span> int <span class="hljs-variable">__init</span> <span class="hljs-title function_">riscv_intc_init</span>(<span class="hljs-params">struct</span> <span class="hljs-params">device_node</span> *<span class="hljs-params">node</span>,<br>            <span class="hljs-params">struct</span> <span class="hljs-params">device_node</span> *<span class="hljs-params">parent</span>)<br>&#123;<br>    int <span class="hljs-variable">rc</span>, <span class="hljs-variable">hartid</span>;<br><br>    <span class="hljs-variable">hartid</span> <span class="hljs-operator">=</span> <span class="hljs-title function_">riscv_of_parent_hartid</span>(<span class="hljs-variable">node</span>);<br>    <span class="hljs-keyword">if</span> (<span class="hljs-variable">hartid</span> <span class="hljs-operator">&lt;</span> <span class="hljs-number">0</span>) &#123;<br>        <span class="hljs-title function_">pr_warn</span>(<span class="hljs-string">&quot;unable to find hart id for %pOF<span class="hljs-char escape_">\n</span>&quot;</span>, <span class="hljs-variable">node</span>);<br>        <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>    &#125;<br><br>    <span class="hljs-comment">/*</span><br><span class="hljs-comment">    * The DT will have one INTC DT node under each CPU (or HART)</span><br><span class="hljs-comment">    * DT node so riscv_intc_init() function will be called once</span><br><span class="hljs-comment">    * for each INTC DT node. We only need to do INTC initialization</span><br><span class="hljs-comment">    * for the INTC DT node belonging to boot CPU (or boot HART).</span><br><span class="hljs-comment">    */</span><br>    <span class="hljs-keyword">if</span> (<span class="hljs-title function_">riscv_hartid_to_cpuid</span>(<span class="hljs-variable">hartid</span>) <span class="hljs-operator">!=</span> <span class="hljs-title function_">smp_processor_id</span>())<br>        <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br><br>    intc_domain <span class="hljs-operator">=</span> <span class="hljs-title function_">irq_domain_add_linear</span>(<span class="hljs-variable">node</span>, <span class="hljs-variable">BITS_PER_LONG</span>,<br>                        <span class="hljs-operator">&amp;</span><span class="hljs-variable">riscv_intc_domain_ops</span>, <span class="hljs-variable">NULL</span>);<br>    <span class="hljs-keyword">if</span> (<span class="hljs-operator">!</span>intc_domain) &#123;<br>        <span class="hljs-title function_">pr_err</span>(<span class="hljs-string">&quot;unable to add IRQ domain<span class="hljs-char escape_">\n</span>&quot;</span>);<br>        <span class="hljs-keyword">return</span> <span class="hljs-operator">-</span><span class="hljs-variable">ENXIO</span>;<br>    &#125;<br><br>    <span class="hljs-variable">rc</span> <span class="hljs-operator">=</span> <span class="hljs-title function_">set_handle_irq</span>(<span class="hljs-operator">&amp;</span><span class="hljs-variable">riscv_intc_irq</span>);<br><br>    <span class="hljs-keyword">if</span> (<span class="hljs-variable">rc</span>) &#123;<br>        <span class="hljs-title function_">pr_err</span>(<span class="hljs-string">&quot;failed to set irq handler<span class="hljs-char escape_">\n</span>&quot;</span>);<br>        <span class="hljs-keyword">return</span> <span class="hljs-variable">rc</span>;<br>    &#125;<br><br>    <span class="hljs-title function_">cpuhp_setup_state</span>(<span class="hljs-variable">CPUHP_AP_IRQ_RISCV_STARTING</span>,<br>            <span class="hljs-string">&quot;irqchip/riscv/intc:starting&quot;</span>,<br>            <span class="hljs-variable">riscv_intc_cpu_starting</span>,<br>            <span class="hljs-variable">riscv_intc_cpu_dying</span>);<br><br>    <span class="hljs-title function_">pr_info</span>(<span class="hljs-string">&quot;%d local interrupts mapped<span class="hljs-char escape_">\n</span>&quot;</span>, <span class="hljs-variable">BITS_PER_LONG</span>);<br><br>    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure></li>
+<li>riscv_intc_irq如下  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-type">static</span> asmlinkage <span class="hljs-type">void</span> <span class="hljs-title">riscv_intc_irq</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> pt_regs *regs)</span></span><br><span class="hljs-function"></span>&#123;<br>    <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> cause = regs-&gt;cause &amp; ~CAUSE_IRQ_FLAG;<br><br>    <span class="hljs-keyword">if</span> (<span class="hljs-built_in">unlikely</span>(cause &gt;= BITS_PER_LONG))<br>        <span class="hljs-built_in">panic</span>(<span class="hljs-string">&quot;unexpected interrupt cause&quot;</span>);<br><br>    <span class="hljs-keyword">switch</span> (cause) &#123;<br><span class="hljs-meta">#<span class="hljs-keyword">ifdef</span> CONFIG_SMP</span><br>    <span class="hljs-keyword">case</span> RV_IRQ_SOFT:<br>        <span class="hljs-comment">/*</span><br><span class="hljs-comment">        * We only use software interrupts to pass IPIs, so if a</span><br><span class="hljs-comment">        * non-SMP system gets one, then we don&#x27;t know what to do.</span><br><span class="hljs-comment">        */</span><br>        <span class="hljs-built_in">handle_IPI</span>(regs);<br>        <span class="hljs-keyword">break</span>;<br><span class="hljs-meta">#<span class="hljs-keyword">endif</span></span><br>    <span class="hljs-keyword">default</span>:<br>        <span class="hljs-built_in">handle_domain_irq</span>(intc_domain, cause, regs);<br>        <span class="hljs-keyword">break</span>;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure></li>
+<li>handle_domain_irq：generic_handle_irq根据中断号，处理对应的中断  <figure class="highlight perl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><code class="hljs perl"><span class="hljs-keyword">int</span> __handle_domain_ir<span class="hljs-string">q(struct irq_domain *domain, unsigned int hwirq,</span><br><span class="hljs-string">    bool lookup, struct pt_regs *regs)</span><br>&#123;<br>    struct pt_regs *old_regs = set_irq_regs(regs);<br>    unsigned <span class="hljs-keyword">int</span> irq = hwirq;<br>    <span class="hljs-keyword">int</span> ret = <span class="hljs-number">0</span>;<br><br>    irq_enter();<br><br><span class="hljs-comment">#ifdef CONFIG_IRQ_DOMAIN</span><br>    <span class="hljs-keyword">if</span> (lookup)<br>        irq = irq_find_mapping(domain, hwirq);<br><span class="hljs-comment">#endif</span><br><br>    /*<br>    * Some hardware gives randomly wrong interrupts.  Rather<br>    * than crashing, <span class="hljs-keyword">do</span> something sensible.<br>    */<br>    <span class="hljs-keyword">if</span> (unlikely(!ir<span class="hljs-string">q ||</span> irq &gt;= nr_irqs)) &#123;<br>        ack_bad_ir<span class="hljs-string">q(irq)</span>;<br>        ret = -EINVAL;<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        generic_handle_ir<span class="hljs-string">q(irq)</span>;<br>    &#125;<br><br>    irq_exit();<br>    set_irq_regs(old_regs);<br>    <span class="hljs-keyword">return</span> ret;<br>&#125;<br></code></pre></td></tr></table></figure></li>
+<li>调用顺序  <figure class="highlight sqf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs sqf">handle_exception<br>    handle_arch_irq（riscv_intc_irq）<br>        handle_domain_irq<br>            irq_exit<br>                <span class="hljs-variable">__irq_exit_rcu</span><br>                    invoke_softirq<br>                        do_softirq_own_stack<br>                            <span class="hljs-variable">__do_softirq</span><br></code></pre></td></tr></table></figure></li>
+<li>__do_softirq:   <figure class="highlight arduino"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><code class="hljs arduino">asmlinkage __visible <span class="hljs-type">void</span> __softirq_entry __do_softirq(<span class="hljs-type">void</span>)<br>&#123;<br>    <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> end = jiffies + MAX_SOFTIRQ_TIME;<br>    <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> old_flags = current-&gt;flags;<br>    <span class="hljs-type">int</span> max_restart = MAX_SOFTIRQ_RESTART;<br>    <span class="hljs-keyword">struct</span> <span class="hljs-title class_">softirq_action</span> *h;<br>    <span class="hljs-type">bool</span> in_hardirq;<br>    __u32 pending;<br>    <span class="hljs-type">int</span> softirq_bit;<br><br>    <span class="hljs-comment">/*</span><br><span class="hljs-comment">    * Mask out PF_MEMALLOC as the current task context is borrowed for the</span><br><span class="hljs-comment">    * softirq. A softirq handled, such as network RX, might set PF_MEMALLOC</span><br><span class="hljs-comment">    * again if the socket is related to swapping.</span><br><span class="hljs-comment">    */</span><br>    current-&gt;flags &amp;= ~PF_MEMALLOC;<br><br>    pending = <span class="hljs-built_in">local_softirq_pending</span>();<br>    <span class="hljs-built_in">account_irq_enter_time</span>(current);<br><br>    __local_bh_disable_ip(_RET_IP_, SOFTIRQ_OFFSET);<br>    in_hardirq = <span class="hljs-built_in">lockdep_softirq_start</span>();<br><br>restart:<br>    <span class="hljs-comment">/* Reset the pending bitmask before enabling irqs */</span><br>    <span class="hljs-built_in">set_softirq_pending</span>(<span class="hljs-number">0</span>);<br><br>    <span class="hljs-built_in">local_irq_enable</span>();<br><br>    h = softirq_vec;<br><br>    <span class="hljs-keyword">while</span> ((softirq_bit = <span class="hljs-built_in">ffs</span>(pending))) &#123;<br>        <span class="hljs-type">unsigned</span> <span class="hljs-type">int</span> vec_nr;<br>        <span class="hljs-type">int</span> prev_count;<br><br>        h += softirq_bit - <span class="hljs-number">1</span>;<br><br>        vec_nr = h - softirq_vec;<br>        prev_count = <span class="hljs-built_in">preempt_count</span>();<br><br>        <span class="hljs-built_in">kstat_incr_softirqs_this_cpu</span>(vec_nr);<br><br>        <span class="hljs-built_in">trace_softirq_entry</span>(vec_nr);<br>        h-&gt;<span class="hljs-built_in">action</span>(h);<br>        <span class="hljs-built_in">trace_softirq_exit</span>(vec_nr);<br>        <span class="hljs-keyword">if</span> (<span class="hljs-built_in">unlikely</span>(prev_count != <span class="hljs-built_in">preempt_count</span>())) &#123;<br>            <span class="hljs-built_in">pr_err</span>(<span class="hljs-string">&quot;huh, entered softirq %u %s %p with preempt_count %08x, exited with %08x?\n&quot;</span>,<br>                vec_nr, softirq_to_name[vec_nr], h-&gt;action,<br>                prev_count, <span class="hljs-built_in">preempt_count</span>());<br>            <span class="hljs-built_in">preempt_count_set</span>(prev_count);<br>        &#125;<br>        h++;<br>        pending &gt;&gt;= softirq_bit;<br>    &#125;<br><br>    <span class="hljs-keyword">if</span> (__this_cpu_read(ksoftirqd) == current)<br>        <span class="hljs-built_in">rcu_softirq_qs</span>();<br>    <span class="hljs-built_in">local_irq_disable</span>();<br><br>    pending = <span class="hljs-built_in">local_softirq_pending</span>();<br>    <span class="hljs-keyword">if</span> (pending) &#123;<br>        <span class="hljs-keyword">if</span> (<span class="hljs-built_in">time_before</span>(jiffies, end) &amp;&amp; !<span class="hljs-built_in">need_resched</span>() &amp;&amp;<br>            --max_restart)<br>            <span class="hljs-keyword">goto</span> restart;<br><br>        <span class="hljs-built_in">wakeup_softirqd</span>();<br>    &#125;<br><br>    <span class="hljs-built_in">lockdep_softirq_end</span>(in_hardirq);<br>    <span class="hljs-built_in">account_irq_exit_time</span>(current);<br>    __local_bh_enable(SOFTIRQ_OFFSET);<br>    <span class="hljs-built_in">WARN_ON_ONCE</span>(<span class="hljs-built_in">in_interrupt</span>());<br>    <span class="hljs-built_in">current_restore_flags</span>(old_flags, PF_MEMALLOC);<br>&#125;<br></code></pre></td></tr></table></figure>
+<ol>
+<li>进入handle_exception中断处于disable状态，在处理硬中断对应的中断服务函数时，中断始终处于关闭状态，<strong>local_irq_enable</strong>开启中断，使<strong>action</strong>部分可以被打断。</li>
+<li>__do_softirq根据对应的软中断标志位，执行软中断的处理。</li>
+<li><strong>softirq_vec</strong>是一个函数指针类型的数组，用于存储对应类型的软中断处理函数，内核现有10种类型的软中断   <figure class="highlight autohotkey"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs autohotkey">enum<br>&#123;<br>    HI_SOFTIRQ=<span class="hljs-number">0</span>,<br><span class="hljs-built_in">    TIMER_SOFTIRQ,</span><br><span class="hljs-built_in">    NET_TX_SOFTIRQ,</span><br><span class="hljs-built_in">    NET_RX_SOFTIRQ,</span><br><span class="hljs-built_in">    BLOCK_SOFTIRQ,</span><br><span class="hljs-built_in">    IRQ_POLL_SOFTIRQ,</span><br><span class="hljs-built_in">    TASKLET_SOFTIRQ,</span><br><span class="hljs-built_in">    SCHED_SOFTIRQ,</span><br><span class="hljs-built_in">    HRTIMER_SOFTIRQ,</span><br><span class="hljs-built_in">    RCU_SOFTIRQ,</span>    <span class="hljs-comment">/* Preferable RCU should always be the last softirq */</span><br><br>    NR_SOFTIRQS<br>&#125;<span class="hljs-comment">;</span><br></code></pre></td></tr></table></figure></li>
+<li>其中<strong>NET_TX_SOFTIRQ</strong>，<strong>NET_RX_SOFTIRQ</strong>，对应的软中断处理函数用于以太网的收发。在net_dev_init（linux&#x2F;net&#x2F;core&#x2F;dev.c）中进行了注册初始化</li>
+</ol>
+</li>
+</ul>
+</li>
+<li><p>慢速路径，ksoftirqd线程被唤醒时会执行 __do_softirq</p>
+<ul>
+<li><p>ksoftirqd是一个内核线程和其它线程一样由内核调度，在spawn_ksoftirqd（linux&#x2F;kernel&#x2F;softirq.c）中创建了ksoftirqd线程</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-type">static</span> <span class="hljs-type">void</span> <span class="hljs-title">run_ksoftirqd</span><span class="hljs-params">(<span class="hljs-type">unsigned</span> <span class="hljs-type">int</span> cpu)</span></span><br><span class="hljs-function"></span>&#123;<br>    <span class="hljs-built_in">local_irq_disable</span>();<br>    <span class="hljs-keyword">if</span> (<span class="hljs-built_in">local_softirq_pending</span>()) &#123;<br>        <span class="hljs-comment">/*</span><br><span class="hljs-comment">        * We can safely run softirq on inline stack, as we are not deep</span><br><span class="hljs-comment">        * in the task stack here.</span><br><span class="hljs-comment">        */</span><br>        __do_softirq();<br>        <span class="hljs-built_in">local_irq_enable</span>();<br>        <span class="hljs-built_in">cond_resched</span>();<br>        <span class="hljs-keyword">return</span>;<br>    &#125;<br>    <span class="hljs-built_in">local_irq_enable</span>();<br>&#125;<br><br><span class="hljs-type">static</span> <span class="hljs-keyword">struct</span> <span class="hljs-title class_">smp_hotplug_thread</span> softirq_threads = &#123;<br>    .store			= &amp;ksoftirqd,<br>    .thread_should_run	= ksoftirqd_should_run,<br>    .thread_fn		= run_ksoftirqd,<br>    .thread_comm		= <span class="hljs-string">&quot;ksoftirqd/%u&quot;</span>,<br>&#125;;<br><br><span class="hljs-function"><span class="hljs-type">static</span> __init <span class="hljs-type">int</span> <span class="hljs-title">spawn_ksoftirqd</span><span class="hljs-params">(<span class="hljs-type">void</span>)</span></span><br><span class="hljs-function"></span>&#123;<br>    <span class="hljs-built_in">cpuhp_setup_state_nocalls</span>(CPUHP_SOFTIRQ_DEAD, <span class="hljs-string">&quot;softirq:dead&quot;</span>, <span class="hljs-literal">NULL</span>,<br>                takeover_tasklets);<br>    <span class="hljs-built_in">BUG_ON</span>(<span class="hljs-built_in">smpboot_register_percpu_thread</span>(&amp;softirq_threads));<br><br>    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>smpboot_register_percpu_thread，以smpboot_thread_fn作为对应的线程fn，在smpboot_thread_fn中执行对应的run_ksoftirqd函数。也就是smpboot_thread_fn作为各种内核线程的框架，利用参数执行对应的线程处理函数</p>
+</li>
+<li><p>smpboot_register_percpu_thread在注册内核线程时，调度策略会被配置为<em><strong>SCHED_NORMAL</strong></em>。  </p>
+<ol>
+<li><p>这里引入一个曾经遇到的问题，具体如下：  </p>
+<ul>
+<li>运行环境为单核linux</li>
+<li>使用实时线程<strong>SCHED_FIFO</strong>调度策略处理密集计算型任务</li>
+<li>使用实时线程<strong>SCHED_FIFO</strong>调度策略，在任务中执行以太网接收</li>
+<li>使用上位机给board发送数据，board进行接收</li>
+<li>在所有任务都运行起来后，发现上位机的以太网发送速率极低，远低于预期带宽</li>
+</ul>
+</li>
+<li><p>现分析如下：  </p>
+<ul>
+<li>由于实时任务优先级高于SCHED_NORMAL的任务，导致ksoftirqd没有机会执行，以太网的接收处理基本处于被饿死的状态。</li>
+<li>我们通过上面的内容也可以知道，ksoftirqd作为内核任务，会处理以太网接收的下半部，这个任务并不会继承用户任务的优先级，当用户任务以高优先级SCHED_FIFO策略进行recv时，内核依然要通过SCHED_NORMAL管理ksoftirqd线程。</li>
+</ul>
+</li>
+</ol>
+  <figure class="highlight sas"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><code class="hljs sas">static __printf(4, 0)<br>struct task_struct <span class="hljs-comment">*__kthread_create_on_node(int (*threadfn)(void *data),</span><br><span class="hljs-comment">                            void *data, int node,</span><br><span class="hljs-comment">                            const char namefmt[],</span><br><span class="hljs-comment">                            va_list args)</span><br><span class="hljs-comment">&#123;</span><br><span class="hljs-comment">    DECLARE_COMPLETION_ONSTACK(done);</span><br>    struct task_struct <span class="hljs-comment">*task;</span><br>    struct kthread_create_info <span class="hljs-comment">*create = kmalloc(sizeof(*create),</span><br><span class="hljs-comment">                            GFP_KERNEL);</span><br><br>    <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">create</span>)<br>        <span class="hljs-keyword">return</span> ERR_PTR(-ENOMEM);<br>    <span class="hljs-keyword">create</span>-&gt;threadfn = threadfn;<br>    <span class="hljs-keyword">create</span>-&gt;data = data;<br>    <span class="hljs-keyword">create</span>-&gt;node = node;<br>    <span class="hljs-keyword">create</span>-&gt;done = <span class="hljs-variable">&amp;done</span>;<br><br>    spin_lock(<span class="hljs-variable">&amp;kthread_create_lock</span>);<br>    list_add_tail(<span class="hljs-variable">&amp;create</span>-&gt;<span class="hljs-keyword">list</span>, <span class="hljs-variable">&amp;kthread_create_list</span>);<br>    spin_unlock(<span class="hljs-variable">&amp;kthread_create_lock</span>);<br><br>    wake_up_process(kthreadd_task);<br>    <span class="hljs-comment">/*</span><br><span class="hljs-comment">    * Wait for completion in killable state, for I might be chosen by</span><br><span class="hljs-comment">    * the OOM killer while kthreadd is trying to allocate memory for</span><br><span class="hljs-comment">    * new kernel thread.</span><br><span class="hljs-comment">    */</span><br>    <span class="hljs-keyword">if</span> (unlikely(wait_for_completion_killable(<span class="hljs-variable">&amp;done</span>))) &#123;<br>        <span class="hljs-comment">/*</span><br><span class="hljs-comment">        * If I was SIGKILLed before kthreadd (or new kernel thread)</span><br><span class="hljs-comment">        * calls complete(), leave the cleanup of this structure to</span><br><span class="hljs-comment">        * that thread.</span><br><span class="hljs-comment">        */</span><br>        <span class="hljs-keyword">if</span> (xchg(<span class="hljs-variable">&amp;create</span>-&gt;done, <span class="hljs-keyword">NULL</span>))<br>            <span class="hljs-keyword">return</span> ERR_PTR(-EINTR);<br>        <span class="hljs-comment">/*</span><br><span class="hljs-comment">        * kthreadd (or new kernel thread) will call complete()</span><br><span class="hljs-comment">        * shortly.</span><br><span class="hljs-comment">        */</span><br>        wait_for_completio<span class="hljs-meta">n</span>(<span class="hljs-variable">&amp;done</span>);<br>    &#125;<br>    task = <span class="hljs-keyword">create</span>-&gt;result;<br>    <span class="hljs-keyword">if</span> (!IS_ERR(task)) &#123;<br>        static const struct sched_param param = &#123; .sched_priority = 0 &#125;;<br>        char name[TASK_COMM_LEN];<br><br>        <span class="hljs-comment">/*</span><br><span class="hljs-comment">        * task is already visible to other tasks, so updating</span><br><span class="hljs-comment">        * COMM must be protected.</span><br><span class="hljs-comment">        */</span><br>        vsnprintf(name, sizeof(name), namefmt, args);<br>        set_task_comm(task, name);<br>        <span class="hljs-comment">/*</span><br><span class="hljs-comment">        * root may have changed our (kthreadd&#x27;s) priority or CPU mask.</span><br><span class="hljs-comment">        * The kernel thread should not inherit these properties.</span><br><span class="hljs-comment">        */</span><br>        sched_setscheduler_nocheck(task, SCHED_NORMAL, <span class="hljs-variable">&amp;param</span>);<br>        set_cpus_allowed_ptr(task,<br>                    housekeeping_cpumask(HK_FLAG_KTHREAD));<br>    &#125;<br>    kfree(<span class="hljs-keyword">create</span>);<br>    <span class="hljs-keyword">return</span> task;<br>&#125;<br></code></pre></td></tr></table></figure></li>
+<li><p>具体的唤醒流程暂时不了解</p>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="NAPI"><a href="#NAPI" class="headerlink" title="NAPI"></a>NAPI</h2><p><a target="_blank" rel="noopener" href="https://docs.linuxkernel.org.cn/networking/napi.html">NAPI</a>是 Linux 网络栈使用的事件处理机制。NAPI 这个名字现在已经没有任何特定的具体含义了<br>新版本内核（5.14+ ?）引入了线程化NAPI，线程化 NAPI 是一种操作模式，它使用专用的内核线程而不是软件 IRQ 上下文来进行 NAPI 处理(暂不了解，仅介绍软中断相关的NAPI)</p>
+<h3 id="NAPI和软中断的关系"><a href="#NAPI和软中断的关系" class="headerlink" title="NAPI和软中断的关系"></a>NAPI和软中断的关系</h3><ul>
+<li>从上面的软中断介绍，我们可以得NAPI是运行于软中断上下文中的。</li>
+</ul>
+<h3 id="xgmac中断"><a href="#xgmac中断" class="headerlink" title="xgmac中断"></a>xgmac中断</h3><ul>
+<li><p>中断注册<br>  在stmmac_open中注册了中断，对应的中断服务函数为<strong>stmmac_interrupt</strong></p>
+  <figure class="highlight perl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs perl">ret = request_ir<span class="hljs-string">q(dev-&gt;irq, stmmac_interrupt,</span><br><span class="hljs-string">    IRQF_SHARED, dev-&gt;name, dev)</span>;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>中断响应<br>  在中断服务函数stmmac_interrupt中，并不会直接调用<strong>stmmac_rx</strong>将sk_buff向上层传递</p>
+  <figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs asciidoc">调用如下<br>stmmac<span class="hljs-emphasis">_interrupt</span><br><span class="hljs-emphasis">    stmmac_dma_interrupt</span><br><span class="hljs-emphasis">        stmmac_napi_check</span><br><span class="hljs-emphasis">            __napi_schedule（会将NET_RX_</span>SOFTIRQ的软中断标志置位）<br></code></pre></td></tr></table></figure>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-type">static</span> <span class="hljs-type">irqreturn_t</span> <span class="hljs-title">stmmac_interrupt</span><span class="hljs-params">(<span class="hljs-type">int</span> irq, <span class="hljs-type">void</span> *dev_id)</span></span><br><span class="hljs-function"></span>&#123;<br>    ***省略部分代码***<br><br>    <span class="hljs-comment">/* To handle DMA interrupts */</span><br>    <span class="hljs-built_in">stmmac_dma_interrupt</span>(priv);<br><br>    <span class="hljs-keyword">return</span> IRQ_HANDLED;<br>&#125;<br></code></pre></td></tr></table></figure>
+  <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs go">static void stmmac_dma_interrupt(<span class="hljs-keyword">struct</span> stmmac_priv *priv)<br>&#123;<br>    ***省略部分代码***<br>    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">chan</span> = <span class="hljs-number">0</span>; <span class="hljs-keyword">chan</span> &lt; channels_to_check; <span class="hljs-keyword">chan</span>++)<br>        status[<span class="hljs-keyword">chan</span>] = stmmac_napi_check(priv, <span class="hljs-keyword">chan</span>);<br>    ***省略部分代码***<br>&#125;<br></code></pre></td></tr></table></figure>
+  <figure class="highlight xl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><code class="hljs xl">static int stmmac_napi_check(struct stmmac_priv *priv, u32 chan)<br>&#123;<br>    <span class="hljs-function"><span class="hljs-title">int</span> status = stmmac_dma_interrupt_status(priv, priv-&gt;</span>ioaddr,<br>                        &amp;<span class="hljs-function"><span class="hljs-title">priv</span>-&gt;</span>xstats, chan);<br>    <span class="hljs-function"><span class="hljs-title">struct</span> stmmac_channel *ch = &amp;priv-&gt;</span>channel[chan];<br>    unsigned long flags;<br><br>    <span class="hljs-function"><span class="hljs-title">if</span> ((status &amp; handle_rx) &amp;&amp; (chan &lt; priv-&gt;</span><span class="hljs-function"><span class="hljs-title">plat</span>-&gt;</span>rx_queues_to_use)) &#123;<br>        <span class="hljs-function"><span class="hljs-title">if</span> (napi_schedule_prep(&amp;ch-&gt;</span>rx_napi)) &#123;<br>            <span class="hljs-function"><span class="hljs-title">spin_lock_irqsave</span>(&amp;ch-&gt;</span>lock, flags);<br>            <span class="hljs-function"><span class="hljs-title">stmmac_disable_dma_irq</span>(priv, priv-&gt;</span>ioaddr, chan, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>);<br>            <span class="hljs-function"><span class="hljs-title">spin_unlock_irqrestore</span>(&amp;ch-&gt;</span>lock, flags);<br>            __<span class="hljs-function"><span class="hljs-title">napi_schedule</span>(&amp;ch-&gt;</span>rx_napi);<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-title">if</span> ((status &amp; handle_tx) &amp;&amp; (chan &lt; priv-&gt;</span><span class="hljs-function"><span class="hljs-title">plat</span>-&gt;</span>tx_queues_to_use)) &#123;<br>        <span class="hljs-function"><span class="hljs-title">if</span> (napi_schedule_prep(&amp;ch-&gt;</span>tx_napi)) &#123;<br>            <span class="hljs-function"><span class="hljs-title">spin_lock_irqsave</span>(&amp;ch-&gt;</span>lock, flags);<br>            <span class="hljs-function"><span class="hljs-title">stmmac_disable_dma_irq</span>(priv, priv-&gt;</span>ioaddr, chan, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>);<br>            <span class="hljs-function"><span class="hljs-title">spin_unlock_irqrestore</span>(&amp;ch-&gt;</span>lock, flags);<br>            __<span class="hljs-function"><span class="hljs-title">napi_schedule</span>(&amp;ch-&gt;</span>tx_napi);<br>        &#125;<br>    &#125;<br><br>    return status;<br>&#125;<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="xgmac-NAPI注册"><a href="#xgmac-NAPI注册" class="headerlink" title="xgmac NAPI注册"></a>xgmac NAPI注册</h3><p>NAPI运行于软中断的上下文中，网卡收到第一包时触发中断，中断上半部主动屏蔽网卡的中断。在软中断上下文中执行对应的poll方法，一次性从网卡中批量取出多个数据包</p>
+<ul>
+<li>stmmac_dvr_probe调用<strong>stmmac_napi_add</strong>调用<strong>netif_napi_add</strong>向系统中初始化注册 NAPI 实例。并指定了调用的poll函数（<strong>stmmac_napi_poll_rx</strong>，<strong>stmmac_napi_poll_tx</strong>）  <figure class="highlight xl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs xl">static void stmmac_napi_add(struct net_device *dev)<br>&#123;<br>    struct stmmac_priv *priv = netdev_priv(dev);<br>    u32 queue, maxq;<br><br>    <span class="hljs-function"><span class="hljs-title">maxq</span> = max(priv-&gt;</span><span class="hljs-function"><span class="hljs-title">plat</span>-&gt;</span><span class="hljs-function"><span class="hljs-title">rx_queues_to_use</span>, priv-&gt;</span><span class="hljs-function"><span class="hljs-title">plat</span>-&gt;</span>tx_queues_to_use);<br><br>    <span class="hljs-keyword">for</span> (queue = <span class="hljs-number">0</span>; queue &lt; maxq; queue++) &#123;<br>        <span class="hljs-function"><span class="hljs-title">struct</span> stmmac_channel *ch = &amp;priv-&gt;</span>channel[queue];<br><br>        <span class="hljs-function"><span class="hljs-title">ch</span>-&gt;</span>priv_data = priv;<br>        <span class="hljs-function"><span class="hljs-title">ch</span>-&gt;</span>index = queue;<br>        <span class="hljs-function"><span class="hljs-title">spin_lock_init</span>(&amp;ch-&gt;</span>lock);<br><br>        <span class="hljs-function"><span class="hljs-title">if</span> (queue &lt; priv-&gt;</span><span class="hljs-function"><span class="hljs-title">plat</span>-&gt;</span>rx_queues_to_use) &#123;<br>            <span class="hljs-function"><span class="hljs-title">netif_napi_add</span>(dev, &amp;ch-&gt;</span>rx_napi, stmmac_napi_poll_rx,<br>                    NAPI_POLL_WEIGHT);<br>        &#125;<br>        <span class="hljs-function"><span class="hljs-title">if</span> (queue &lt; priv-&gt;</span><span class="hljs-function"><span class="hljs-title">plat</span>-&gt;</span>tx_queues_to_use) &#123;<br>            <span class="hljs-function"><span class="hljs-title">netif_tx_napi_add</span>(dev, &amp;ch-&gt;</span>tx_napi,<br>                    stmmac_napi_poll_tx,<br>                    NAPI_POLL_WEIGHT);<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="NAPI内核实例"><a href="#NAPI内核实例" class="headerlink" title="NAPI内核实例"></a>NAPI内核实例</h3><ul>
+<li><p>硬中断服务程序：在硬中断服务程序中基本没做什么事情，只是调用__napi_schedule，触发中断下半部</p>
+  <figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs asciidoc">stmmac<span class="hljs-emphasis">_interrupt</span><br><span class="hljs-emphasis">    stmmac_dma_interrupt</span><br><span class="hljs-emphasis">        stmmac_napi_check</span><br><span class="hljs-emphasis">            __napi_</span>schedule<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>__napi_schedule<br>将指定的struct napi_struct添加到<strong>当前CPU</strong>的poll_list链表尾部<br>触发NET_RX_SOFTIRQ软中断，内核在执行__do_softirq时，就会执行net_rx_action，从而遍历poll_list,执行对应的poll（<strong>stmmac_napi_poll_rx</strong>）函数</p>
+<ol>
+<li>调用栈</li>
+</ol>
+  <figure class="highlight isbl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs isbl"><span class="hljs-variable">__napi_schedule</span><br>    <span class="hljs-variable">____napi_schedule</span><br>        <span class="hljs-function"><span class="hljs-title">list_add_tail</span>(将<span class="hljs-variable">napi</span>加入到当前<span class="hljs-variable">cpu</span>的<span class="hljs-variable">poll_list</span>尾部)</span><br>        <span class="hljs-variable">__raise_softirq_irqoff</span><br>            <span class="hljs-function"><span class="hljs-title">or_softirq_pending</span>(置<span class="hljs-variable">NET_RX_SOFTIRQ</span>标志位)</span><br></code></pre></td></tr></table></figure>
+<ol start="2">
+<li>相关函数和宏定义</li>
+</ol>
+  <figure class="highlight scss"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><code class="hljs scss">void <span class="hljs-built_in">__napi_schedule</span>(struct napi_struct *n)<br>&#123;<br>    unsigned long flags;<br><br>    <span class="hljs-built_in">local_irq_save</span>(flags);<br>    <span class="hljs-built_in">____napi_schedule</span>(this_cpu_ptr(&amp;softnet_data), n);<br>    <span class="hljs-built_in">local_irq_restore</span>(flags);<br>&#125;<br><br>static inline void <span class="hljs-built_in">____napi_schedule</span>(struct softnet_data *sd,<br>                    struct napi_struct *napi)<br>&#123;<br>    <span class="hljs-built_in">list_add_tail</span>(&amp;napi-&gt;poll_list, &amp;sd-&gt;poll_list);<br>    <span class="hljs-built_in">__raise_softirq_irqoff</span>(NET_RX_SOFTIRQ);<br>&#125;<br><br>void <span class="hljs-built_in">__raise_softirq_irqoff</span>(unsigned int nr)<br>&#123;<br>    <span class="hljs-built_in">lockdep_assert_irqs_disabled</span>();<br>    <span class="hljs-built_in">trace_softirq_raise</span>(nr);<br>    <span class="hljs-built_in">or_softirq_pending</span>(<span class="hljs-number">1</span>UL &lt;&lt; nr);<br>&#125;<br><br><span class="hljs-selector-id">#define</span> <span class="hljs-built_in">local_softirq_pending</span>()	(__this_cpu_read(local_softirq_pending_ref))<br><span class="hljs-selector-id">#define</span> <span class="hljs-built_in">set_softirq_pending</span>(x)	(__this_cpu_write(local_softirq_pending_ref, (x)))<br><span class="hljs-selector-id">#define</span> <span class="hljs-built_in">or_softirq_pending</span>(x)	(__this_cpu_or(local_softirq_pending_ref, (x)))<br><br><span class="hljs-selector-id">#define</span> local_softirq_pending_ref irq_stat<span class="hljs-selector-class">.__softirq_pending</span><br><br><span class="hljs-selector-id">#ifndef</span> __ARCH_IRQ_STAT<br><span class="hljs-built_in">DEFINE_PER_CPU_ALIGNED</span>(irq_cpustat_t, irq_stat);<br><span class="hljs-built_in">EXPORT_PER_CPU_SYMBOL</span>(irq_stat);<br><span class="hljs-selector-id">#endif</span><br></code></pre></td></tr></table></figure></li>
+<li><p>net_dev_init<br>注册了NET_RX_SOFTIRQ中断对应的处理函数</p>
+<ol>
+<li>调用关系</li>
+</ol>
+  <figure class="highlight perl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs perl">net_dev_init<br>    open_softir<span class="hljs-string">q(NET_TX_SOFTIRQ, net_tx_action)</span>;<br>    open_softir<span class="hljs-string">q(NET_RX_SOFTIRQ, net_rx_action)</span>;<br><br></code></pre></td></tr></table></figure>
+<ol start="2">
+<li>相关函数</li>
+</ol>
+  <figure class="highlight sas"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><code class="hljs sas">void open_softirq(int nr, void (<span class="hljs-comment">*action)(struct softirq_action *))</span><br><span class="hljs-comment">&#123;</span><br><span class="hljs-comment">    softirq_vec[nr].action = action;</span><br>&#125;<br><br>static __latent_entropy void net_rx_actio<span class="hljs-meta">n</span>(struct softirq_action <span class="hljs-comment">*h)</span><br><span class="hljs-comment">&#123;</span><br><span class="hljs-comment">    struct softnet_data *sd = this_cpu_ptr(&amp;softnet_data);</span><br>    unsigned long time_limit = jiffies +<br>        usecs_to_jiffies(READ_ONCE(netdev_budget_usecs));<br>    int budget = READ_ONCE(netdev_budget);<br>    LIST_HEAD(<span class="hljs-keyword">list</span>);<br>    LIST_HEAD(repoll);<br><br>    local_irq_disable();<br>    list_splice_init(<span class="hljs-variable">&amp;sd</span>-&gt;poll_list, <span class="hljs-variable">&amp;list</span>);<br>    local_irq_enable();<br><br>    for (;;) &#123;<br>        struct napi_struct <span class="hljs-comment">*n;</span><br><br>        <span class="hljs-keyword">if</span> (list_empty(<span class="hljs-variable">&amp;list</span>)) &#123;<br>            <span class="hljs-keyword">if</span> (!sd_has_rps_ipi_waiting(sd) <span class="hljs-variable">&amp;&amp;</span> list_empty(<span class="hljs-variable">&amp;repoll</span>))<br>                <span class="hljs-keyword">goto</span> <span class="hljs-keyword">out</span>;<br>            break;<br>        &#125;<br><br>        n = list_first_entry(<span class="hljs-variable">&amp;list</span>, struct napi_struct, poll_list);<br>        budget -= napi_poll(n, <span class="hljs-variable">&amp;repoll</span>);<br><br>        <span class="hljs-comment">/* If softirq window is exhausted then punt.</span><br><span class="hljs-comment">        * Allow this to run for 2 jiffies since which will allow</span><br><span class="hljs-comment">        * an average latency of 1.5/HZ.</span><br><span class="hljs-comment">        */</span><br>        <span class="hljs-keyword">if</span> (unlikely(budget &lt;= 0 ||<br>                time_after_eq(jiffies, time_limit))) &#123;<br>            sd-&gt;time_squeeze++;<br>            break;<br>        &#125;<br>    &#125;<br><br>    local_irq_disable();<br><br>    list_splice_tail_init(<span class="hljs-variable">&amp;sd</span>-&gt;poll_list, <span class="hljs-variable">&amp;list</span>);<br>    list_splice_tail(<span class="hljs-variable">&amp;repoll</span>, <span class="hljs-variable">&amp;list</span>);<br>    list_splice(<span class="hljs-variable">&amp;list</span>, <span class="hljs-variable">&amp;sd</span>-&gt;poll_list);<br>    <span class="hljs-keyword">if</span> (!list_empty(<span class="hljs-variable">&amp;sd</span>-&gt;poll_list))<br>        __raise_softirq_irqoff(NET_RX_SOFTIRQ);<br><br>    net_rps_action_and_irq_enable(sd);<br><span class="hljs-keyword">out</span>:<br>    __kfree_skb_flush();<br>&#125;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>__do_softirq<br>软中断上下文，在其中处理各类软中断</p>
+<ol>
+<li>调用关系</li>
+</ol>
+  <figure class="highlight xl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs xl">__do_softirq<br>    <span class="hljs-function"><span class="hljs-title">h</span>-&gt;</span><span class="hljs-function"><span class="hljs-title">action</span>(h); ---&gt;</span> 执行对应的软中断处理函数，以NET_RX_SOFTIRQ为例，即执行net_rx_action<br>    <span class="hljs-function"><span class="hljs-title">net_rx_action</span> ---&gt;</span> 假设执行net_rx_action<br>        <span class="hljs-function"><span class="hljs-title">napi_poll</span> --&gt;</span> 执行对应的以太网rx poll函数<br>            <span class="hljs-function"><span class="hljs-title">work</span> = n-&gt;</span>poll(n, weight);  stmmac_napi_poll_rx<br>            stmmac_napi_poll_rx<br>                <span class="hljs-function"><span class="hljs-title">stmmac_rx</span>   --&gt;</span> 最终的以太网rx接收函数<br>                    <span class="hljs-function"><span class="hljs-title">napi_gro_receive</span>   --&gt;</span> 将skb向上层传递（其中包括包的合并处理）<br></code></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>相关函数</li>
+</ol>
+  <figure class="highlight arduino"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><code class="hljs arduino">asmlinkage __visible <span class="hljs-type">void</span> __softirq_entry __do_softirq(<span class="hljs-type">void</span>)<br>&#123;<br>    <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> end = jiffies + MAX_SOFTIRQ_TIME;<br>    <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> old_flags = current-&gt;flags;<br>    <span class="hljs-type">int</span> max_restart = MAX_SOFTIRQ_RESTART;<br>    <span class="hljs-keyword">struct</span> <span class="hljs-title class_">softirq_action</span> *h;<br>    <span class="hljs-type">bool</span> in_hardirq;<br>    __u32 pending;<br>    <span class="hljs-type">int</span> softirq_bit;<br><br>    <span class="hljs-comment">/*</span><br><span class="hljs-comment">    * Mask out PF_MEMALLOC as the current task context is borrowed for the</span><br><span class="hljs-comment">    * softirq. A softirq handled, such as network RX, might set PF_MEMALLOC</span><br><span class="hljs-comment">    * again if the socket is related to swapping.</span><br><span class="hljs-comment">    */</span><br>    current-&gt;flags &amp;= ~PF_MEMALLOC;<br><br>    pending = <span class="hljs-built_in">local_softirq_pending</span>();        --&gt;通过irq_stat变量获取对应的软中断<span class="hljs-function">pending</span><br><span class="hljs-function">    <span class="hljs-title">account_irq_enter_time</span><span class="hljs-params">(current)</span></span>;<br><br>    __local_bh_disable_ip(_RET_IP_, SOFTIRQ_OFFSET);<br>    in_hardirq = <span class="hljs-built_in">lockdep_softirq_start</span>();<br><br>restart:<br>    <span class="hljs-comment">/* Reset the pending bitmask before enabling irqs */</span><br>    <span class="hljs-built_in">set_softirq_pending</span>(<span class="hljs-number">0</span>);<br><br>    <span class="hljs-built_in">local_irq_enable</span>();<br><br>    h = softirq_vec;<br><br>    <span class="hljs-keyword">while</span> ((softirq_bit = <span class="hljs-built_in">ffs</span>(pending))) &#123;<br>        <span class="hljs-type">unsigned</span> <span class="hljs-type">int</span> vec_nr;<br>        <span class="hljs-type">int</span> prev_count;<br><br>        h += softirq_bit - <span class="hljs-number">1</span>;        --&gt;获取对应软中断的中断服务函数<br><br>        vec_nr = h - softirq_vec;<br>        prev_count = <span class="hljs-built_in">preempt_count</span>();<br><br>        <span class="hljs-built_in">kstat_incr_softirqs_this_cpu</span>(vec_nr);<br><br>        <span class="hljs-built_in">trace_softirq_entry</span>(vec_nr);<br>        h-&gt;<span class="hljs-built_in">action</span>(h);        --&gt;执行对应软中断的中断服务函数<br>        <span class="hljs-built_in">trace_softirq_exit</span>(vec_nr);<br>        <span class="hljs-keyword">if</span> (<span class="hljs-built_in">unlikely</span>(prev_count != <span class="hljs-built_in">preempt_count</span>())) &#123;<br>            <span class="hljs-built_in">pr_err</span>(<span class="hljs-string">&quot;huh, entered softirq %u %s %p with preempt_count %08x, exited with %08x?\n&quot;</span>,<br>                vec_nr, softirq_to_name[vec_nr], h-&gt;action,<br>                prev_count, <span class="hljs-built_in">preempt_count</span>());<br>            <span class="hljs-built_in">preempt_count_set</span>(prev_count);<br>        &#125;<br>        h++;<br>        pending &gt;&gt;= softirq_bit;<br>    &#125;<br><br>    <span class="hljs-keyword">if</span> (__this_cpu_read(ksoftirqd) == current)<br>        <span class="hljs-built_in">rcu_softirq_qs</span>();<br>    <span class="hljs-built_in">local_irq_disable</span>();<br><br>    pending = <span class="hljs-built_in">local_softirq_pending</span>();<br>    <span class="hljs-keyword">if</span> (pending) &#123;<br>        <span class="hljs-keyword">if</span> (<span class="hljs-built_in">time_before</span>(jiffies, end) &amp;&amp; !<span class="hljs-built_in">need_resched</span>() &amp;&amp;<br>            --max_restart)<br>            <span class="hljs-keyword">goto</span> restart;<br><br>        <span class="hljs-built_in">wakeup_softirqd</span>();<br>    &#125;<br><br>    <span class="hljs-built_in">lockdep_softirq_end</span>(in_hardirq);<br>    <span class="hljs-built_in">account_irq_exit_time</span>(current);<br>    __local_bh_enable(SOFTIRQ_OFFSET);<br>    <span class="hljs-built_in">WARN_ON_ONCE</span>(<span class="hljs-built_in">in_interrupt</span>());<br>    <span class="hljs-built_in">current_restore_flags</span>(old_flags, PF_MEMALLOC);<br>&#125;<br><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> local_softirq_pending_ref irq_stat.__softirq_pending</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> local_softirq_pending()	(__this_cpu_read(local_softirq_pending_ref))</span><br></code></pre></td></tr></table></figure>
+
+  <figure class="highlight sas"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><code class="hljs sas">static __latent_entropy void net_rx_actio<span class="hljs-meta">n</span>(struct softirq_action <span class="hljs-comment">*h)</span><br><span class="hljs-comment">&#123;</span><br><span class="hljs-comment">    struct softnet_data *sd = this_cpu_ptr(&amp;softnet_data);</span>        --&gt; 获取当前core的softnet_data<br>    unsigned long time_limit = jiffies +<br>        usecs_to_jiffies(READ_ONCE(netdev_budget_usecs));<br>    int budget = READ_ONCE(netdev_budget);<br>    LIST_HEAD(<span class="hljs-keyword">list</span>);<br>    LIST_HEAD(repoll);<br><br>    local_irq_disable();<br>    list_splice_init(<span class="hljs-variable">&amp;sd</span>-&gt;poll_list, <span class="hljs-variable">&amp;list</span>);        --&gt; 将 sd-&gt;poll_list 移动到 <span class="hljs-keyword">list</span>，sd-&gt;poll_list中即存储了由 __napi_schedule 链入的struct napi_struct<br>    local_irq_enable();<br><br>    for (;;) &#123;<br>        struct napi_struct <span class="hljs-comment">*n;</span><br><br>        <span class="hljs-keyword">if</span> (list_empty(<span class="hljs-variable">&amp;list</span>)) &#123;<br>            <span class="hljs-keyword">if</span> (!sd_has_rps_ipi_waiting(sd) <span class="hljs-variable">&amp;&amp;</span> list_empty(<span class="hljs-variable">&amp;repoll</span>))<br>                <span class="hljs-keyword">goto</span> <span class="hljs-keyword">out</span>;<br>            break;<br>        &#125;<br><br>        n = list_first_entry(<span class="hljs-variable">&amp;list</span>, struct napi_struct, poll_list);<br>        budget -= napi_poll(n, <span class="hljs-variable">&amp;repoll</span>);    --&gt; 内部执行对应的poll函数<br><br>        <span class="hljs-comment">/* If softirq window is exhausted then punt.</span><br><span class="hljs-comment">        * Allow this to run for 2 jiffies since which will allow</span><br><span class="hljs-comment">        * an average latency of 1.5/HZ.</span><br><span class="hljs-comment">        */</span><br>        <span class="hljs-keyword">if</span> (unlikely(budget &lt;= 0 ||<br>                time_after_eq(jiffies, time_limit))) &#123;<br>            sd-&gt;time_squeeze++;<br>            break;<br>        &#125;<br>    &#125;<br><br>    local_irq_disable();<br><br>    list_splice_tail_init(<span class="hljs-variable">&amp;sd</span>-&gt;poll_list, <span class="hljs-variable">&amp;list</span>);<br>    list_splice_tail(<span class="hljs-variable">&amp;repoll</span>, <span class="hljs-variable">&amp;list</span>);<br>    list_splice(<span class="hljs-variable">&amp;list</span>, <span class="hljs-variable">&amp;sd</span>-&gt;poll_list);<br>    <span class="hljs-keyword">if</span> (!list_empty(<span class="hljs-variable">&amp;sd</span>-&gt;poll_list))<br>        __raise_softirq_irqoff(NET_RX_SOFTIRQ);<br><br>    net_rps_action_and_irq_enable(sd);<br><span class="hljs-keyword">out</span>:<br>    __kfree_skb_flush();<br>&#125;<br></code></pre></td></tr></table></figure>
+  <figure class="highlight xl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><code class="hljs xl">static int napi_poll(struct napi_struct *n, struct list_head *repoll)<br>&#123;<br>    void *have;<br>    int work, weight;<br><br>    <span class="hljs-function"><span class="hljs-title">list_del_init</span>(&amp;n-&gt;</span>poll_list);<br><br>    have = netpoll_poll_lock(n);<br><br>    <span class="hljs-function"><span class="hljs-title">weight</span> = n-&gt;</span>weight;<br><br>    <span class="hljs-comment">/* This NAPI_STATE_SCHED test is for avoiding a race</span><br><span class="hljs-comment">    * with netpoll&#x27;s poll_napi().  Only the entity which</span><br><span class="hljs-comment">    * obtains the lock and sees NAPI_STATE_SCHED set will</span><br><span class="hljs-comment">    * actually make the -&gt;poll() call.  Therefore we avoid</span><br><span class="hljs-comment">    * accidentally calling -&gt;poll() when NAPI is not scheduled.</span><br><span class="hljs-comment">    */</span><br>    work = <span class="hljs-number">0</span>;<br>    <span class="hljs-function"><span class="hljs-title">if</span> (test_bit(NAPI_STATE_SCHED, &amp;n-&gt;</span>state)) &#123;<br>        <span class="hljs-function"><span class="hljs-title">work</span> = n-&gt;</span><span class="hljs-function"><span class="hljs-title">poll</span>(n, weight);     --&gt;</span> 执行 stmmac_napi_poll_rx<br>        trace_napi_poll(n, work, weight);<br>    &#125;<br><br>    <span class="hljs-keyword">if</span> (unlikely(work &gt; weight))<br>        pr_err_once(<span class="hljs-string">&quot;NAPI poll function %pS returned %d, exceeding its budget of %d.\n&quot;</span>,<br>                <span class="hljs-function"><span class="hljs-title">n</span>-&gt;</span>poll, work, weight);<br><br>    <span class="hljs-keyword">if</span> (likely(work &lt; weight))<br>        goto out_unlock;<br><br>    <span class="hljs-comment">/* Drivers must not modify the NAPI state if they</span><br><span class="hljs-comment">    * consume the entire weight.  In such cases this code</span><br><span class="hljs-comment">    * still &quot;owns&quot; the NAPI instance and therefore can</span><br><span class="hljs-comment">    * move the instance around on the list at-will.</span><br><span class="hljs-comment">    */</span><br>    <span class="hljs-keyword">if</span> (unlikely(napi_disable_pending(n))) &#123;<br>        napi_complete(n);<br>        goto out_unlock;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-title">if</span> (n-&gt;</span>gro_bitmask) &#123;<br>        <span class="hljs-comment">/* flush too old packets</span><br><span class="hljs-comment">        * If HZ &lt; 1000, flush all packets.</span><br><span class="hljs-comment">        */</span><br>        napi_gro_flush(n, HZ &gt;= <span class="hljs-number">1000</span>);<br>    &#125;<br><br>    gro_normal_list(n);<br><br>    <span class="hljs-comment">/* Some drivers may have called napi_schedule</span><br><span class="hljs-comment">    * prior to exhausting their budget.</span><br><span class="hljs-comment">    */</span><br>    <span class="hljs-function"><span class="hljs-title">if</span> (unlikely(!list_empty(&amp;n-&gt;</span>poll_list))) &#123;<br>        pr_warn_once(<span class="hljs-string">&quot;%s: Budget exhausted after napi rescheduled\n&quot;</span>,<br>                <span class="hljs-function"><span class="hljs-title">n</span>-&gt;</span><span class="hljs-function"><span class="hljs-title">dev</span> ? n-&gt;</span><span class="hljs-function"><span class="hljs-title">dev</span>-&gt;</span><span class="hljs-keyword">name</span> : <span class="hljs-string">&quot;backlog&quot;</span>);<br>        goto out_unlock;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-title">list_add_tail</span>(&amp;n-&gt;</span>poll_list, repoll);<br><br>out_unlock:<br>    netpoll_poll_unlock(have);<br><br>    return work;<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+  <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs rust"><span class="hljs-keyword">static</span> int <span class="hljs-title function_ invoke__">stmmac_napi_poll_rx</span>(<span class="hljs-keyword">struct</span> <span class="hljs-title class_">napi_struct</span> *napi, int budget)<br>&#123;<br>    <span class="hljs-keyword">struct</span> <span class="hljs-title class_">stmmac_channel</span> *ch =<br>        <span class="hljs-title function_ invoke__">container_of</span>(napi, <span class="hljs-keyword">struct</span> <span class="hljs-title class_">stmmac_channel</span>, rx_napi);<br>    <span class="hljs-keyword">struct</span> <span class="hljs-title class_">stmmac_priv</span> *<span class="hljs-keyword">priv</span> = ch<span class="hljs-punctuation">-&gt;</span>priv_data;<br>    <span class="hljs-type">u32</span> chan = ch<span class="hljs-punctuation">-&gt;</span>index;<br>    int work_done;<br><br>    <span class="hljs-keyword">priv</span><span class="hljs-punctuation">-&gt;</span>xstats.napi_poll++;<br><br>    work_done = <span class="hljs-title function_ invoke__">stmmac_rx</span>(<span class="hljs-keyword">priv</span>, budget, chan);<br>    <span class="hljs-keyword">if</span> (work_done &lt; budget &amp;&amp; <span class="hljs-title function_ invoke__">napi_complete_done</span>(napi, work_done)) &#123;<br>        unsigned long flags;<br><br>        <span class="hljs-title function_ invoke__">spin_lock_irqsave</span>(&amp;ch<span class="hljs-punctuation">-&gt;</span>lock, flags);<br>        <span class="hljs-title function_ invoke__">stmmac_enable_dma_irq</span>(<span class="hljs-keyword">priv</span>, <span class="hljs-keyword">priv</span><span class="hljs-punctuation">-&gt;</span>ioaddr, chan, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>);<br>        <span class="hljs-title function_ invoke__">spin_unlock_irqrestore</span>(&amp;ch<span class="hljs-punctuation">-&gt;</span>lock, flags);<br>    &#125;<br><br>    <span class="hljs-keyword">return</span> work_done;<br>&#125;<br><br></code></pre></td></tr></table></figure></li>
+</ul>
+<h1 id="RISCV-PLIC"><a href="#RISCV-PLIC" class="headerlink" title="RISCV PLIC"></a>RISCV PLIC</h1><p>PLIC 不支持中断抢占或嵌套机制。在中断触发后硬件自动关闭外部中断，因此想要实现软中断机制，需要在执行__do_softirq时打开外部中断，使得外部中断可以抢占软中断。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/linux/" class="print-no-link">#linux</a>
+      
+        <a href="/tags/%E4%BB%A5%E5%A4%AA%E7%BD%91/" class="print-no-link">#以太网</a>
+      
+        <a href="/tags/NAPI/" class="print-no-link">#NAPI</a>
+      
+        <a href="/tags/%E8%BD%AF%E4%B8%AD%E6%96%AD/" class="print-no-link">#软中断</a>
+      
+        <a href="/tags/top-half/" class="print-no-link">#top-half</a>
+      
+        <a href="/tags/bottom-half/" class="print-no-link">#bottom-half</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>linux内核网络协议栈</div>
+      <div>https://blog.baimochun.xyz/2026/08/20/linux内核网络协议栈/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>baimochun</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年8月20日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/08/14/UX900-linux/" title="UX900 linux">
+                        <span class="hidden-mobile">UX900 linux</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

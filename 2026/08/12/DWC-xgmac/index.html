@@ -19,17 +19,19 @@
   <meta name="author" content="baimochun">
   <meta name="keywords" content="">
   
-    <meta name="description" content="dw xgmac使用记录典型结构介绍 从典型结构图可以看出，xgmac接口部分由MAC、PCS和PMA组成  PMA层：利用SerDes技术实现，实现数据的串并转换 PCS层：实现编解码，扰码&#x2F;解扰。对MAC层的数据进行信道编码等 MAC层：由XGMAC-AXI，XGMAC-MTL，XGMAC-CORE组成  uboot mac初始化 xgmac reset后自动清零。置位时复位mac逻">
+    <meta name="description" content="dw xgmac使用记录典型结构介绍 从典型结构图可以看出，xgmac接口部分由MAC、PCS和PMA组成  PMA层：利用SerDes技术实现，实现数据的串并转换 PCS层：实现编解码，扰码&#x2F;解扰。对MAC层的数据进行信道编码等 MAC层：由XGMAC-AXI，XGMAC-MTL，XGMAC-CORE组成  uboot mac初始化初始化做的事情，dma,mtl,macdma init">
 <meta property="og:type" content="article">
 <meta property="og:title" content="DWC xgmac">
 <meta property="og:url" content="https://blog.baimochun.xyz/2026/08/12/DWC-xgmac/index.html">
 <meta property="og:site_name" content="baimochun">
-<meta property="og:description" content="dw xgmac使用记录典型结构介绍 从典型结构图可以看出，xgmac接口部分由MAC、PCS和PMA组成  PMA层：利用SerDes技术实现，实现数据的串并转换 PCS层：实现编解码，扰码&#x2F;解扰。对MAC层的数据进行信道编码等 MAC层：由XGMAC-AXI，XGMAC-MTL，XGMAC-CORE组成  uboot mac初始化 xgmac reset后自动清零。置位时复位mac逻">
+<meta property="og:description" content="dw xgmac使用记录典型结构介绍 从典型结构图可以看出，xgmac接口部分由MAC、PCS和PMA组成  PMA层：利用SerDes技术实现，实现数据的串并转换 PCS层：实现编解码，扰码&#x2F;解扰。对MAC层的数据进行信道编码等 MAC层：由XGMAC-AXI，XGMAC-MTL，XGMAC-CORE组成  uboot mac初始化初始化做的事情，dma,mtl,macdma init">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://blog.baimochun.xyz/2026/08/12/DWC-xgmac/xgmac%E7%BB%93%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE.JPG">
 <meta property="article:published_time" content="2026-08-12T08:48:52.000Z">
-<meta property="article:modified_time" content="2026-08-14T07:04:20.959Z">
+<meta property="article:modified_time" content="2026-08-18T05:57:06.172Z">
 <meta property="article:author" content="baimochun">
+<meta property="article:tag" content="xgmac">
+<meta property="article:tag" content="以太网">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://blog.baimochun.xyz/2026/08/12/DWC-xgmac/xgmac%E7%BB%93%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE.JPG">
   
@@ -327,7 +329,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          839 字
+          245 字
         
       </span>
     
@@ -338,7 +340,7 @@
         
         
         
-          7 分钟
+          3 分钟
         
       </span>
     
@@ -389,28 +391,15 @@
 <li>PCS层：实现编解码，扰码&#x2F;解扰。对MAC层的数据进行信道编码等</li>
 <li>MAC层：由XGMAC-AXI，XGMAC-MTL，XGMAC-CORE组成</li>
 </ul>
-<h2 id="uboot-mac初始化"><a href="#uboot-mac初始化" class="headerlink" title="uboot mac初始化"></a>uboot mac初始化</h2><ul>
-<li>xgmac reset后自动清零。置位时复位mac逻辑电路。此处等待复位完成</li>
-</ul>
-<figure class="highlight xl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs xl"><span class="hljs-function"><span class="hljs-title">ret</span> = wait_for_bit_le32(&amp;xgmac-&gt;</span><span class="hljs-function"><span class="hljs-title">dma_regs</span>-&gt;</span>mode,<br>                        XGMAC_DMA_MODE_SWR, <span class="hljs-literal">false</span>,<br>                        <span class="hljs-function"><span class="hljs-title">xgmac</span>-&gt;</span><span class="hljs-function"><span class="hljs-title">config</span>-&gt;</span>swr_wait, <span class="hljs-literal">false</span>);<br></code></pre></td></tr></table></figure>
-<ul>
-<li>配置mtl txq0, 使能tx queue 0；配置Transmit Store and Forward，当MTL中存在完整数据包时开始传输，忽略队列的阈值配置</li>
-</ul>
-<figure class="highlight xl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs xl"><span class="hljs-function"><span class="hljs-title">setbits_le32</span>(&amp;xgmac-&gt;</span><span class="hljs-function"><span class="hljs-title">mtl_regs</span>-&gt;</span>txq0_operation_mode,<br>	     XGMAC_MTL_TXQ0_OPERATION_MODE_TSF |<br>	     (XGMAC_MTL_TXQ0_OPERATION_MODE_TXQEN_ENABLED <span class="hljs-string">&lt;&lt;</span><br><span class="hljs-string">	      XGMAC_MTL_TXQ0_OPERATION_MODE_TXQEN_SHIFT));</span><br></code></pre></td></tr></table></figure>
-<ul>
-<li>tx queue权重配置</li>
-</ul>
-<figure class="highlight xl"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs xl"><span class="hljs-function"><span class="hljs-title">writel</span>(0x10, &amp;xgmac-&gt;</span><span class="hljs-function"><span class="hljs-title">mtl_regs</span>-&gt;</span>txq0_quantum_weight);<br></code></pre></td></tr></table></figure>
-<ul>
-<li>rx queue SF</li>
-</ul>
-<figure class="highlight xl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs xl"><span class="hljs-function"><span class="hljs-title">setbits_le32</span>(&amp;xgmac-&gt;</span><span class="hljs-function"><span class="hljs-title">mtl_regs</span>-&gt;</span>rxq0_operation_mode,<br>	     XGMAC_MTL_RXQ0_OPERATION_MODE_RSF);<br></code></pre></td></tr></table></figure>
-
-<ul>
-<li>读取硬件feature，确定fifo size</li>
-<li>配置tx rx queue size，这里配置为fifo的最大值，fifo的空间都给queue0使用</li>
-<li></li>
-</ul>
+<h2 id="uboot-mac初始化"><a href="#uboot-mac初始化" class="headerlink" title="uboot mac初始化"></a>uboot mac初始化</h2><p>初始化做的事情，dma,mtl,mac<br>dma init:</p>
+<ol>
+<li>复位，等复位完成</li>
+<li>配置dma burst</li>
+<li>创建描述符</li>
+<li>配置描述符位置和长度等</li>
+<li>配置dma中断</li>
+<li>启动dma<br>mtl init：</li>
+</ol>
 
                 
               </div>
@@ -419,6 +408,15 @@
             <div>
               <div class="post-metas my-3">
   
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E4%BB%A5%E5%A4%AA%E7%BD%91/" class="print-no-link">#以太网</a>
+      
+        <a href="/tags/xgmac/" class="print-no-link">#xgmac</a>
+      
+    </div>
   
 </div>
 
