@@ -11,6 +11,8 @@
   <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
   <link rel="icon" href="/img/fluid.png">
   
+    <link rel="canonical" href="https://blog.baimochun.xyz/2026/08/20/linux内核网络协议栈/"/>
+  
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -19,15 +21,15 @@
   <meta name="author" content="baimochun">
   <meta name="keywords" content="">
   
-    <meta name="description" content="环境 linux version: 5.10.237 以太网驱动：stmmac xgmac（dw xgmac）  架构概览收发数据包过程中断上半部、下半部linux 内核中对中断嵌套的定义是：这里的中断嵌套应当指的是中断上半部的嵌套，即硬件的中断不会被新的硬件的中断打断 中断上半部又叫硬中断，是通常意义上的中断处理程序。在关中断的状态下处理，不可被中断简单理解为:由request_irq注册的处理">
+    <meta name="description" content="环境 linux version: 5.10.237 以太网驱动：stmmac xgmac（dw xgmac）  架构概览收发数据包过程stmmac xgmac初始化中断上半部、下半部linux 内核中对中断嵌套的定义是：这里的中断嵌套应当指的是中断上半部的嵌套，即硬件的中断不会被新的硬件的中断打断 中断上半部又叫硬中断，是通常意义上的中断处理程序。在关中断的状态下处理，不可被中断简单理解为:由r">
 <meta property="og:type" content="article">
 <meta property="og:title" content="linux内核网络协议栈">
 <meta property="og:url" content="https://blog.baimochun.xyz/2026/08/20/linux%E5%86%85%E6%A0%B8%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88/index.html">
 <meta property="og:site_name" content="baimochun">
-<meta property="og:description" content="环境 linux version: 5.10.237 以太网驱动：stmmac xgmac（dw xgmac）  架构概览收发数据包过程中断上半部、下半部linux 内核中对中断嵌套的定义是：这里的中断嵌套应当指的是中断上半部的嵌套，即硬件的中断不会被新的硬件的中断打断 中断上半部又叫硬中断，是通常意义上的中断处理程序。在关中断的状态下处理，不可被中断简单理解为:由request_irq注册的处理">
+<meta property="og:description" content="环境 linux version: 5.10.237 以太网驱动：stmmac xgmac（dw xgmac）  架构概览收发数据包过程stmmac xgmac初始化中断上半部、下半部linux 内核中对中断嵌套的定义是：这里的中断嵌套应当指的是中断上半部的嵌套，即硬件的中断不会被新的硬件的中断打断 中断上半部又叫硬中断，是通常意义上的中断处理程序。在关中断的状态下处理，不可被中断简单理解为:由r">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-08-20T05:55:53.000Z">
-<meta property="article:modified_time" content="2026-08-24T03:02:22.420Z">
+<meta property="article:modified_time" content="2026-08-24T06:53:21.360Z">
 <meta property="article:author" content="baimochun">
 <meta property="article:tag" content="NAPI">
 <meta property="article:tag" content="bottom-half">
@@ -390,7 +392,7 @@
 <li>linux version: 5.10.237</li>
 <li>以太网驱动：stmmac xgmac（dw xgmac）</li>
 </ol>
-<h1 id="架构概览"><a href="#架构概览" class="headerlink" title="架构概览"></a>架构概览</h1><h1 id="收发数据包过程"><a href="#收发数据包过程" class="headerlink" title="收发数据包过程"></a>收发数据包过程</h1><h2 id="中断上半部、下半部"><a href="#中断上半部、下半部" class="headerlink" title="中断上半部、下半部"></a>中断上半部、下半部</h2><p>linux 内核中对中断嵌套的定义是：这里的中断嵌套应当指的是中断上半部的嵌套，即硬件的中断不会被新的硬件的中断打断</p>
+<h1 id="架构概览"><a href="#架构概览" class="headerlink" title="架构概览"></a>架构概览</h1><h1 id="收发数据包过程"><a href="#收发数据包过程" class="headerlink" title="收发数据包过程"></a>收发数据包过程</h1><h1 id="stmmac-xgmac初始化"><a href="#stmmac-xgmac初始化" class="headerlink" title="stmmac xgmac初始化"></a>stmmac xgmac初始化</h1><h2 id="中断上半部、下半部"><a href="#中断上半部、下半部" class="headerlink" title="中断上半部、下半部"></a>中断上半部、下半部</h2><p>linux 内核中对中断嵌套的定义是：这里的中断嵌套应当指的是中断上半部的嵌套，即硬件的中断不会被新的硬件的中断打断</p>
 <h3 id="中断上半部"><a href="#中断上半部" class="headerlink" title="中断上半部"></a>中断上半部</h3><p>又叫硬中断，是通常意义上的中断处理程序。在关中断的状态下处理，不可被中断<br>简单理解为:由request_irq注册的处理函数，称为中断上半部</p>
 <h3 id="中断下半部"><a href="#中断下半部" class="headerlink" title="中断下半部"></a>中断下半部</h3><p>处理中断中的耗时，非紧急任务。在开中断状态下处理，可被中断</p>
 <ul>
@@ -401,10 +403,10 @@
 <li><p>快速路径，每次有硬件中断，硬中断处理结束后<strong>irq_exit</strong>中会调用 <strong>__do_softirq</strong>，以riscv为例</p>
 <ul>
 <li><p>调用顺序</p>
-  <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs text">handle_exception<br>    handle_arch_irq（riscv_intc_irq）<br>        handle_domain_irq<br>            __handle_domain_irq<br>                generic_handle_irq --&gt; 对应的硬件中断的处理（执行硬件中断服务函数）<br>                irq_exit<br>                    __irq_exit_rcu<br>                        invoke_softirq<br>                            do_softirq_own_stack<br>                                __do_softirq  --&gt; 软中断处理<br></code></pre></td></tr></table></figure>
+  <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs text">handle_exception<br>    handle_arch_irq（riscv_intc_irq）<br>        handle_domain_irq<br>            __handle_domain_irq<br>                generic_handle_irq --&gt; 硬件中断处理<br>                irq_exit<br>                    __irq_exit_rcu<br>                        invoke_softirq<br>                            do_softirq_own_stack<br>                                __do_softirq  --&gt; 软中断处理<br></code></pre></td></tr></table></figure>
 </li>
 <li><p>linux&#x2F;arch&#x2F;riscv&#x2F;kernel&#x2F;head.S中，将<strong>handle_exception</strong>设置为中断和异常的入口</p>
-  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs asm">la a0, handle_exception<br>csrw CSR_TVEC, a0   // TVEC（trap vector） 寄存器用于存储中断和异常的入口<br></code></pre></td></tr></table></figure></li>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs asm">la a0, handle_exception<br>csrw CSR_TVEC, a0   // TVEC（trap vector）寄存器用于存储中断和异常的入口<br></code></pre></td></tr></table></figure></li>
 <li><p>linux&#x2F;arch&#x2F;riscv&#x2F;kernel&#x2F;entry.S， <strong>handle_exception</strong>函数调用<strong>handle_arch_irq</strong>为处理中断。<br> riscv_intc_init函数将<strong>handle_arch_irq</strong>初始化为<strong>riscv_intc_irq</strong></p>
   <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">static</span> <span class="hljs-type">int</span> __init <span class="hljs-title function_">riscv_intc_init</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> device_node *node,</span><br><span class="hljs-params">            <span class="hljs-keyword">struct</span> device_node *parent)</span><br>&#123;<br>    <span class="hljs-type">int</span> rc, hartid;<br><br>    hartid = riscv_of_parent_hartid(node);<br>    <span class="hljs-keyword">if</span> (hartid &lt; <span class="hljs-number">0</span>) &#123;<br>        pr_warn(<span class="hljs-string">&quot;unable to find hart id for %pOF\n&quot;</span>, node);<br>        <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>    &#125;<br><br>    <span class="hljs-comment">/*</span><br><span class="hljs-comment">    * The DT will have one INTC DT node under each CPU (or HART)</span><br><span class="hljs-comment">    * DT node so riscv_intc_init() function will be called once</span><br><span class="hljs-comment">    * for each INTC DT node. We only need to do INTC initialization</span><br><span class="hljs-comment">    * for the INTC DT node belonging to boot CPU (or boot HART).</span><br><span class="hljs-comment">    */</span><br>    <span class="hljs-keyword">if</span> (riscv_hartid_to_cpuid(hartid) != smp_processor_id())<br>        <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br><br>    intc_domain = irq_domain_add_linear(node, BITS_PER_LONG,<br>                        &amp;riscv_intc_domain_ops, <span class="hljs-literal">NULL</span>);<br>    <span class="hljs-keyword">if</span> (!intc_domain) &#123;<br>        pr_err(<span class="hljs-string">&quot;unable to add IRQ domain\n&quot;</span>);<br>        <span class="hljs-keyword">return</span> -ENXIO;<br>    &#125;<br><br>    rc = set_handle_irq(&amp;riscv_intc_irq);<br><br>    <span class="hljs-keyword">if</span> (rc) &#123;<br>        pr_err(<span class="hljs-string">&quot;failed to set irq handler\n&quot;</span>);<br>        <span class="hljs-keyword">return</span> rc;<br>    &#125;<br><br>    cpuhp_setup_state(CPUHP_AP_IRQ_RISCV_STARTING,<br>            <span class="hljs-string">&quot;irqchip/riscv/intc:starting&quot;</span>,<br>            riscv_intc_cpu_starting,<br>            riscv_intc_cpu_dying);<br><br>    pr_info(<span class="hljs-string">&quot;%d local interrupts mapped\n&quot;</span>, BITS_PER_LONG);<br><br>    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure></li>
 <li><p>riscv_intc_irq函数如下，非RV_IRQ_SOFT执行<strong>handle_domain_irq</strong></p>
@@ -526,9 +528,9 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/tags/linux/" class="print-no-link">#linux</a>
-      
         <a href="/tags/%E4%BB%A5%E5%A4%AA%E7%BD%91/" class="print-no-link">#以太网</a>
+      
+        <a href="/tags/linux/" class="print-no-link">#linux</a>
       
         <a href="/tags/NAPI/" class="print-no-link">#NAPI</a>
       
