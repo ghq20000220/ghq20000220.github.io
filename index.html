@@ -343,7 +343,7 @@
       
       <a class="index-excerpt index-excerpt__noimg" href="/2026/08/20/linux%E5%86%85%E6%A0%B8%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88/" target="_self">
         <div>
-          环境 linux version: 5.10.237 以太网驱动：stmmac xgmac（dw xgmac）  架构概览收发数据包过程stmmac xgmac初始化中断上半部、下半部linux 内核中对中断嵌套的定义是：这里的中断嵌套应当指的是中断上半部的嵌套，即硬件的中断不会被新的硬件的中断打断 中断上半部又叫硬中断，是通常意义上的中断处理程序。在关中断的状态下处理，不可被中断简单理解为:由r
+          环境 linux version: 5.10.237 以太网驱动：stmmac xgmac（dw xgmac）  内核网络协议栈架构flowchart TD     A[应用程序&lt;br&gt;（用户空间）] --&gt;|系统调用&lt;br&gt;（socket/send/recv）| B[系统调用接口层]          subgraph C [内核空间：网络协议栈]
         </div>
       </a>
 
