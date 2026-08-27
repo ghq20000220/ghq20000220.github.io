@@ -21,18 +21,19 @@
   <meta name="author" content="baimochun">
   <meta name="keywords" content="">
   
-    <meta name="description" content="环境 linux version: 5.10.237 以太网驱动：stmmac xgmac（dw xgmac）  内核网络协议栈架构flowchart TD     A[应用程序&lt;br&gt;（用户空间）] --&gt;|系统调用&lt;br&gt;（socket&#x2F;send&#x2F;recv）| B[系统调用接口层]          subgraph C [内核空间：网络协议栈]">
+    <meta name="description" content="环境 linux version: 5.10.237 以太网驱动：stmmac xgmac（dw xgmac）  内核网络协议栈架构flowchart TD     A[&quot;应用程序&lt;br&gt;（用户空间）&quot;] --&gt;|&quot;系统调用&lt;br&gt;（socket&#x2F;send&#x2F;recv）&quot;| B[系统调用接口层]          subgraph">
 <meta property="og:type" content="article">
 <meta property="og:title" content="linux内核网络协议栈">
 <meta property="og:url" content="https://blog.baimochun.xyz/2026/08/20/linux%E5%86%85%E6%A0%B8%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88/index.html">
 <meta property="og:site_name" content="baimochun">
-<meta property="og:description" content="环境 linux version: 5.10.237 以太网驱动：stmmac xgmac（dw xgmac）  内核网络协议栈架构flowchart TD     A[应用程序&lt;br&gt;（用户空间）] --&gt;|系统调用&lt;br&gt;（socket&#x2F;send&#x2F;recv）| B[系统调用接口层]          subgraph C [内核空间：网络协议栈]">
+<meta property="og:description" content="环境 linux version: 5.10.237 以太网驱动：stmmac xgmac（dw xgmac）  内核网络协议栈架构flowchart TD     A[&quot;应用程序&lt;br&gt;（用户空间）&quot;] --&gt;|&quot;系统调用&lt;br&gt;（socket&#x2F;send&#x2F;recv）&quot;| B[系统调用接口层]          subgraph">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-08-20T05:55:53.000Z">
-<meta property="article:modified_time" content="2026-08-26T05:35:58.790Z">
+<meta property="article:modified_time" content="2026-08-27T00:57:06.827Z">
 <meta property="article:author" content="baimochun">
 <meta property="article:tag" content="NAPI">
 <meta property="article:tag" content="bottom-half">
+<meta property="article:tag" content="dwxgmac">
 <meta property="article:tag" content="linux">
 <meta property="article:tag" content="top-half">
 <meta property="article:tag" content="以太网">
@@ -333,7 +334,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          23k 字
+          26k 字
         
       </span>
     
@@ -344,7 +345,7 @@
         
         
         
-          190 分钟
+          213 分钟
         
       </span>
     
@@ -393,20 +394,21 @@
 <li>以太网驱动：stmmac xgmac（dw xgmac）</li>
 </ol>
 <h1 id="内核网络协议栈架构"><a href="#内核网络协议栈架构" class="headerlink" title="内核网络协议栈架构"></a>内核网络协议栈架构</h1><pre><code class=" mermaid">flowchart TD
-    A[应用程序&lt;br&gt;（用户空间）] --&gt;|系统调用&lt;br&gt;（socket/send/recv）| B[系统调用接口层]
+    A[&quot;应用程序&lt;br&gt;（用户空间）&quot;] --&gt;|&quot;系统调用&lt;br&gt;（socket/send/recv）&quot;| B[系统调用接口层]
     
-    subgraph C [内核空间：网络协议栈]
+    subgraph C [&quot;内核空间：网络协议栈&quot;]
         direction TB
-        D[协议无关层&lt;br&gt;（Socket Layer）] --&gt; E[网络协议层&lt;br&gt;（TCP/UDP/IP）]
-        E --&gt; F[设备无关层&lt;br&gt;（驱动抽象接口）]
+        D[&quot;协议无关层&lt;br&gt;（Socket Layer）&quot;] --&gt; E[&quot;网络协议层&lt;br&gt;（TCP/UDP/IP）&quot;]
+        E --&gt; F[&quot;设备无关层&lt;br&gt;（驱动抽象接口）&quot;]
         F --&gt; G[设备驱动层]
     end
     
     B --&gt; D
     
+
     subgraph H [核心数据结构]
-        I[sk_buff&lt;br&gt;（套接字缓冲区）]
-        J[net_device&lt;br&gt;（网络设备抽象）]
+        I[&quot;sk_buff&lt;br&gt;（套接字缓冲区）&quot;]
+        J[&quot;net_device&lt;br&gt;（网络设备抽象）&quot;]
     end
     
     D -.-&gt; I
@@ -414,7 +416,7 @@
     F -.-&gt; J
     G -.-&gt; J
     
-    G --&gt; K[物理硬件&lt;br&gt;（网卡）]
+    G --&gt; K[&quot;物理硬件&lt;br&gt;（网卡）&quot;]
     
     style I fill:#f9f,stroke:#333,stroke-width:2px
     style J fill:#f9f,stroke:#333,stroke-width:2px
@@ -423,11 +425,72 @@
 <ul>
 <li>系统分层<ol>
 <li><strong>系统调用接口层</strong>：用户程序进入内核的唯一入口。应用程序通过Socket API发起网络操作，触发系统调用，进入内核协议栈</li>
-<li>协议无关层：向上层提供统一的接口，向下屏蔽</li>
+<li><strong>协议无关层</strong>：向上层提供统一的接口，向下屏蔽具体的传输协议差异</li>
+<li><strong>网络协议层</strong>：这是协议栈的核心，负责实现各种网络协议。它包含传输层的TCP、UDP和网络层的IP、ICMP等。在这一层，数据包被封装或解封装，并执行路由查找、分片重组等关键操作</li>
+<li><strong>设备无关层</strong>：这一层提供了一个统一的接口来访问底层不同的网卡驱动程序。它通过net_device结构体将各种硬件的差异抽象为open, close, init等标准操作，使得网络协议层无需关心具体物理硬件的细节</li>
+<li><strong>设备驱动层</strong>：这是直接与硬件交互的层。驱动程序实现了对具体网卡的控制，负责初始化硬件、发送和接收数据包，并响应硬件中断</li>
+</ol>
+</li>
+<li>两大核心数据结构<ol>
+<li><strong>sk_buff</strong>（套接字缓冲区）：这是贯穿协议栈各层的数据包载体。它本身不存储数据包内容，而是通过head, data, tail, end四个指针来管理实际的数据缓冲区。当数据在协议栈中向上或向下传递时，内核只需移动data和tail指针来添加或剥离协议头，从而避免了昂贵的数据拷贝操作。此外，它还包含mac_header, network_header等指针，直接指向各层协议的头部，方便协议栈快速定位和解析</li>
+<li><strong>net_device</strong>（网络设备抽象）：这是内核中代表一个网络设备的数据结构。无论是物理网卡还是虚拟设备（如环路接口、VLAN），在Linux内核中都以一个net_device结构来表示。所有设备的net_device结构通过链表（由全局变量dev_base指向）组织在一起。这个结构体包含了设备的所有信息（如名称、中断号、硬件地址）以及一系列操作函数指针（如netdev_ops），是驱动与协议栈交互的核心</li>
 </ol>
 </li>
 </ul>
-<h1 id="收发数据包过程"><a href="#收发数据包过程" class="headerlink" title="收发数据包过程"></a>收发数据包过程</h1><h1 id="stmmac-xgmac初始化"><a href="#stmmac-xgmac初始化" class="headerlink" title="stmmac xgmac初始化"></a>stmmac xgmac初始化</h1><p>TODO:probe流程，对应的以太网控制器注册初始化流程</p>
+<h1 id="报文处理流程"><a href="#报文处理流程" class="headerlink" title="报文处理流程"></a>报文处理流程</h1><pre><code class=" mermaid">flowchart TD
+    subgraph A [&quot;客户端: 发送过程&quot;]
+        direction TB
+        A1[&quot;应用程序&lt;br&gt;（用户空间）&quot;] --&gt;|系统调用 send| A2
+    
+        subgraph A2 [内核网络协议栈]
+            direction TB
+            AS[&quot;套接字层&lt;br&gt;（Socket Layer）&quot;] --&gt;|tcp_sendmsg| AT[&quot;传输层&lt;br&gt;（TCP/UDP）&quot;]
+            AT --&gt;|ip_output| AI[&quot;网络层&lt;br&gt;（IP）&quot;]
+            AI --&gt;|&quot;邻居子系统&lt;br&gt;（ARP）&quot;| AL[&quot;链路层&lt;br&gt;（设备驱动接口）&quot;]
+        end
+        
+        A2 --&gt;|ndo_start_xmit| A3[网卡硬件]
+        A3 --&gt;|物理介质| B1[网络信号]
+    end
+
+    B1 --&gt;|物理介质| C3[网卡硬件]
+
+    subgraph C [&quot;服务端: 接收过程&quot;]
+        direction TB
+        C3[网卡硬件] --&gt;|DMA + 中断| C2
+    
+        subgraph C2 [内核网络协议栈]
+            direction TB
+            CL[&quot;链路层&lt;br&gt;（NAPI / netif_receive_skb）&quot;] --&gt;|__netif_receive_skb_core| CI[&quot;网络层&lt;br&gt;（IP / ip_rcv）&quot;]
+            CI --&gt;|ip_local_deliver| CT[&quot;传输层&lt;br&gt;（TCP / tcp_v4_rcv）&quot;]
+            CT --&gt;|tcp_queue_rcv&lt;br&gt;tcp_data_ready| CS[&quot;套接字层&lt;br&gt;（Socket Layer）&quot;]
+        end
+        
+        C2 --&gt; C1[&quot;应用程序&lt;br&gt;（用户空间）&quot;]
+    end
+
+    style A2 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style C2 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style A3 fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    style C3 fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    style B1 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,stroke-dasharray: 5 5
+</code></pre>
+<h2 id="发送路径"><a href="#发送路径" class="headerlink" title="发送路径"></a>发送路径</h2><ol>
+<li>应用发起：用户程序调用 send 系统调用，进入内核。</li>
+<li>套接字与传输层：内核通过套接字层找到对应的连接，并调用 tcp_sendmsg（以TCP为例）。TCP层负责将用户数据按MSS分段，并添加TCP头部。</li>
+<li>网络层：ip_output 函数添加IP头部，并通过路由表查找决定从哪个网卡发出。</li>
+<li>链路层与驱动：通过邻居子系统（ARP） 获取目标MAC地址，封装成以太网帧。最终调用网卡驱动的 ndo_start_xmit 函数。</li>
+<li>硬件发送：驱动将数据包放入网卡的DMA发送队列，网卡将其转换为电信号&#x2F;光信号从物理介质发出。</li>
+</ol>
+<h2 id="接收路径"><a href="#接收路径" class="headerlink" title="接收路径"></a>接收路径</h2><ol>
+<li>硬件接收：网卡收到信号，还原为数据帧，通过DMA直接写入内存的Ring Buffer，然后触发硬件中断。</li>
+<li>NAPI与链路层：中断上半部触发 NET_RX_SOFTIRQ 软中断。软中断中，net_rx_action 调用驱动的 poll 函数，从Ring Buffer批量取出数据包，并通过 netif_receive_skb 送入协议栈。</li>
+<li>链路层分发：__netif_receive_skb_core 根据以太网头中的类型（如 ETH_P_IP）在 ptype_base 哈希表中找到 ip_rcv，将数据包分发给IP层。</li>
+<li>IP层处理：ip_rcv 函数进行校验和检查，通过 ip_route_input_noref 做路由决策，确认是发往本机的包后，交给 ip_local_deliver。IP层根据协议号（如TCP是6）在 inet_protos 中找到 tcp_v4_rcv，进行分发。</li>
+<li>TCP层处理：tcp_v4_rcv 通过四元组查找对应的 struct sock。数据通过 tcp_queue_rcv 放入套接字的接收队列，并调用 tcp_data_ready 通知上层。</li>
+<li>唤醒与读取：tcp_data_ready 唤醒阻塞在 recv 上的用户进程。进程被调度后，系统调用 recv 进入内核，执行 tcp_recvmsg，通过 skb_copy_datagram_msg 将内核数据拷贝到用户空间缓冲区，最终返回。</li>
+</ol>
+<h1 id="dwxgmac-初始化"><a href="#dwxgmac-初始化" class="headerlink" title="dwxgmac 初始化"></a>dwxgmac 初始化</h1><p>TODO:probe流程，对应的以太网控制器注册初始化流程</p>
 <h1 id="linux中断，中断嵌套"><a href="#linux中断，中断嵌套" class="headerlink" title="linux中断，中断嵌套"></a>linux中断，中断嵌套</h1><p>在Linux内核中，“不支持中断嵌套”指：在当前CPU上处理一个硬件中断（即执行中断上半部&#x2F;硬中断服务程序）期间，当前CPU会处于关中断状态，使得任何新的外部硬件中断都不能抢占当前正在执行的中断处理程序。新的中断请求必须等待当前ISR执行完毕后，才能在开中断时被响应和处理</p>
 <h2 id="中断上半部（Top-Half）"><a href="#中断上半部（Top-Half）" class="headerlink" title="中断上半部（Top Half）"></a>中断上半部（Top Half）</h2><ol>
 <li>通过 <strong>request_irq</strong>() 注册的那个中断服务程序（ISR）</li>
@@ -497,6 +560,8 @@
 <li><p>smpboot_register_percpu_thread，以smpboot_thread_fn作为对应的线程fn，在smpboot_thread_fn中执行对应的run_ksoftirqd函数。也就是smpboot_thread_fn作为各种内核线程的框架，利用参数执行对应的线程处理函数</p>
 </li>
 <li><p>smpboot_register_percpu_thread在注册内核线程时，调度策略会被配置为<em><strong>SCHED_NORMAL</strong></em>。  </p>
+  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">static</span> __printf(<span class="hljs-number">4</span>, <span class="hljs-number">0</span>)<br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">task_struct</span> *__<span class="hljs-title">kthread_create_on_node</span>(<span class="hljs-title">int</span> (*<span class="hljs-title">threadfn</span>)(<span class="hljs-title">void</span> *<span class="hljs-title">data</span>),</span><br><span class="hljs-class">                            <span class="hljs-title">void</span> *<span class="hljs-title">data</span>, <span class="hljs-title">int</span> <span class="hljs-title">node</span>,</span><br><span class="hljs-class">                            <span class="hljs-title">const</span> <span class="hljs-title">char</span> <span class="hljs-title">namefmt</span>[],</span><br><span class="hljs-class">                            <span class="hljs-title">va_list</span> <span class="hljs-title">args</span>)</span><br><span class="hljs-class">&#123;</span><br>    DECLARE_COMPLETION_ONSTACK(done);<br>    <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">task_struct</span> *<span class="hljs-title">task</span>;</span><br>    <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">kthread_create_info</span> *<span class="hljs-title">create</span> =</span> kmalloc(<span class="hljs-keyword">sizeof</span>(*create),<br>                            GFP_KERNEL);<br><br>    <span class="hljs-keyword">if</span> (!create)<br>        <span class="hljs-keyword">return</span> ERR_PTR(-ENOMEM);<br>    create-&gt;threadfn = threadfn;<br>    create-&gt;data = data;<br>    create-&gt;node = node;<br>    create-&gt;done = &amp;done;<br><br>    spin_lock(&amp;kthread_create_lock);<br>    list_add_tail(&amp;create-&gt;<span class="hljs-built_in">list</span>, &amp;kthread_create_list);<br>    spin_unlock(&amp;kthread_create_lock);<br><br>    wake_up_process(kthreadd_task);<br>    <span class="hljs-comment">/*</span><br><span class="hljs-comment">    * Wait for completion in killable state, for I might be chosen by</span><br><span class="hljs-comment">    * the OOM killer while kthreadd is trying to allocate memory for</span><br><span class="hljs-comment">    * new kernel thread.</span><br><span class="hljs-comment">    */</span><br>    <span class="hljs-keyword">if</span> (unlikely(wait_for_completion_killable(&amp;done))) &#123;<br>        <span class="hljs-comment">/*</span><br><span class="hljs-comment">        * If I was SIGKILLed before kthreadd (or new kernel thread)</span><br><span class="hljs-comment">        * calls complete(), leave the cleanup of this structure to</span><br><span class="hljs-comment">        * that thread.</span><br><span class="hljs-comment">        */</span><br>        <span class="hljs-keyword">if</span> (xchg(&amp;create-&gt;done, <span class="hljs-literal">NULL</span>))<br>            <span class="hljs-keyword">return</span> ERR_PTR(-EINTR);<br>        <span class="hljs-comment">/*</span><br><span class="hljs-comment">        * kthreadd (or new kernel thread) will call complete()</span><br><span class="hljs-comment">        * shortly.</span><br><span class="hljs-comment">        */</span><br>        wait_for_completion(&amp;done);<br>    &#125;<br>    task = create-&gt;result;<br>    <span class="hljs-keyword">if</span> (!IS_ERR(task)) &#123;<br>        <span class="hljs-type">static</span> <span class="hljs-type">const</span> <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">sched_param</span> <span class="hljs-title">param</span> =</span> &#123; .sched_priority = <span class="hljs-number">0</span> &#125;;<br>        <span class="hljs-type">char</span> name[TASK_COMM_LEN];<br><br>        <span class="hljs-comment">/*</span><br><span class="hljs-comment">        * task is already visible to other tasks, so updating</span><br><span class="hljs-comment">        * COMM must be protected.</span><br><span class="hljs-comment">        */</span><br>        vsnprintf(name, <span class="hljs-keyword">sizeof</span>(name), namefmt, args);<br>        set_task_comm(task, name);<br>        <span class="hljs-comment">/*</span><br><span class="hljs-comment">        * root may have changed our (kthreadd&#x27;s) priority or CPU mask.</span><br><span class="hljs-comment">        * The kernel thread should not inherit these properties.</span><br><span class="hljs-comment">        */</span><br>        sched_setscheduler_nocheck(task, SCHED_NORMAL, &amp;param);<br>        set_cpus_allowed_ptr(task,<br>                    housekeeping_cpumask(HK_FLAG_KTHREAD));<br>    &#125;<br>    kfree(create);<br>    <span class="hljs-keyword">return</span> task;<br>&#125;<br></code></pre></td></tr></table></figure>
+
 <ol>
 <li><p>这里引入一个曾经遇到的问题，具体如下：  </p>
 <ul>
@@ -514,7 +579,7 @@
 </ul>
 </li>
 </ol>
-  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">static</span> __printf(<span class="hljs-number">4</span>, <span class="hljs-number">0</span>)<br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">task_struct</span> *__<span class="hljs-title">kthread_create_on_node</span>(<span class="hljs-title">int</span> (*<span class="hljs-title">threadfn</span>)(<span class="hljs-title">void</span> *<span class="hljs-title">data</span>),</span><br><span class="hljs-class">                            <span class="hljs-title">void</span> *<span class="hljs-title">data</span>, <span class="hljs-title">int</span> <span class="hljs-title">node</span>,</span><br><span class="hljs-class">                            <span class="hljs-title">const</span> <span class="hljs-title">char</span> <span class="hljs-title">namefmt</span>[],</span><br><span class="hljs-class">                            <span class="hljs-title">va_list</span> <span class="hljs-title">args</span>)</span><br><span class="hljs-class">&#123;</span><br>    DECLARE_COMPLETION_ONSTACK(done);<br>    <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">task_struct</span> *<span class="hljs-title">task</span>;</span><br>    <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">kthread_create_info</span> *<span class="hljs-title">create</span> =</span> kmalloc(<span class="hljs-keyword">sizeof</span>(*create),<br>                            GFP_KERNEL);<br><br>    <span class="hljs-keyword">if</span> (!create)<br>        <span class="hljs-keyword">return</span> ERR_PTR(-ENOMEM);<br>    create-&gt;threadfn = threadfn;<br>    create-&gt;data = data;<br>    create-&gt;node = node;<br>    create-&gt;done = &amp;done;<br><br>    spin_lock(&amp;kthread_create_lock);<br>    list_add_tail(&amp;create-&gt;<span class="hljs-built_in">list</span>, &amp;kthread_create_list);<br>    spin_unlock(&amp;kthread_create_lock);<br><br>    wake_up_process(kthreadd_task);<br>    <span class="hljs-comment">/*</span><br><span class="hljs-comment">    * Wait for completion in killable state, for I might be chosen by</span><br><span class="hljs-comment">    * the OOM killer while kthreadd is trying to allocate memory for</span><br><span class="hljs-comment">    * new kernel thread.</span><br><span class="hljs-comment">    */</span><br>    <span class="hljs-keyword">if</span> (unlikely(wait_for_completion_killable(&amp;done))) &#123;<br>        <span class="hljs-comment">/*</span><br><span class="hljs-comment">        * If I was SIGKILLed before kthreadd (or new kernel thread)</span><br><span class="hljs-comment">        * calls complete(), leave the cleanup of this structure to</span><br><span class="hljs-comment">        * that thread.</span><br><span class="hljs-comment">        */</span><br>        <span class="hljs-keyword">if</span> (xchg(&amp;create-&gt;done, <span class="hljs-literal">NULL</span>))<br>            <span class="hljs-keyword">return</span> ERR_PTR(-EINTR);<br>        <span class="hljs-comment">/*</span><br><span class="hljs-comment">        * kthreadd (or new kernel thread) will call complete()</span><br><span class="hljs-comment">        * shortly.</span><br><span class="hljs-comment">        */</span><br>        wait_for_completion(&amp;done);<br>    &#125;<br>    task = create-&gt;result;<br>    <span class="hljs-keyword">if</span> (!IS_ERR(task)) &#123;<br>        <span class="hljs-type">static</span> <span class="hljs-type">const</span> <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">sched_param</span> <span class="hljs-title">param</span> =</span> &#123; .sched_priority = <span class="hljs-number">0</span> &#125;;<br>        <span class="hljs-type">char</span> name[TASK_COMM_LEN];<br><br>        <span class="hljs-comment">/*</span><br><span class="hljs-comment">        * task is already visible to other tasks, so updating</span><br><span class="hljs-comment">        * COMM must be protected.</span><br><span class="hljs-comment">        */</span><br>        vsnprintf(name, <span class="hljs-keyword">sizeof</span>(name), namefmt, args);<br>        set_task_comm(task, name);<br>        <span class="hljs-comment">/*</span><br><span class="hljs-comment">        * root may have changed our (kthreadd&#x27;s) priority or CPU mask.</span><br><span class="hljs-comment">        * The kernel thread should not inherit these properties.</span><br><span class="hljs-comment">        */</span><br>        sched_setscheduler_nocheck(task, SCHED_NORMAL, &amp;param);<br>        set_cpus_allowed_ptr(task,<br>                    housekeeping_cpumask(HK_FLAG_KTHREAD));<br>    &#125;<br>    kfree(create);<br>    <span class="hljs-keyword">return</span> task;<br>&#125;<br></code></pre></td></tr></table></figure></li>
+</li>
 <li><p>具体的唤醒流程暂时不了解</p>
 </li>
 </ul>
@@ -590,6 +655,27 @@
             <div>
               <div class="post-metas my-3">
   
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%9C%AA%E5%AE%8C%E6%88%90/" class="category-chain-item">未完成</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
   
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
@@ -605,6 +691,8 @@
         <a href="/tags/top-half/" class="print-no-link">#top-half</a>
       
         <a href="/tags/bottom-half/" class="print-no-link">#bottom-half</a>
+      
+        <a href="/tags/dwxgmac/" class="print-no-link">#dwxgmac</a>
       
     </div>
   
