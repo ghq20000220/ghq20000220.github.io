@@ -4,19 +4,6 @@
   
   
   <entry>
-    <title>Eclipse Embedded C/C++</title>
-    <link href="/2026/09/03/Eclipse-Embedded-C-C/"/>
-    <url>/2026/09/03/Eclipse-Embedded-C-C/</url>
-    
-    <content type="html"><![CDATA[<p>在Eclipse中安装Jlink Debugging插件，实现使用jlink debug的简易操作</p><h1 id="安装教程"><a href="#安装教程" class="headerlink" title="安装教程"></a>安装教程</h1><ul><li><p>Help –&gt; Install New Software<br><img src="/2026/09/03/Eclipse-Embedded-C-C/help.JPG" alt="help"></p></li><li><p>在work with中填入插件地址：<a href="https://download.eclipse.org/embed-cdt/updates/v6/">https://download.eclipse.org/embed-cdt/updates/v6/</a><br><img src="/2026/09/03/Eclipse-Embedded-C-C/work_with.JPG" alt="work with"></p></li><li><p>在Embedded C&#x2F;C++ Cross Development Tools选项下选择Jlink Debugging插件，<strong>不需要的插件尽量不要安装</strong>，减少下载时间<br><img src="/2026/09/03/Eclipse-Embedded-C-C/jlink_debugging.JPG" alt="jlink debug"></p></li><li><p>点击NEXT进行安装，跟随指引安装即可</p></li></ul><h1 id="使用教程"><a href="#使用教程" class="headerlink" title="使用教程"></a>使用教程</h1><p>安装Jlink Debugging插件后，在Debug Config选项卡中会出现GDB SEGGER J-Link Debugging选项</p><ol><li><p>新建GDB SEGGER J-Link Debugging配置<br><img src="/2026/09/03/Eclipse-Embedded-C-C/debug_config.JPG" alt="选项卡"></p></li><li><p>各配置选项简要说明  </p><ul><li><p>MAIN  </p><ol><li>Project：选择一个工程</li><li>C&#x2F;C++ Application：选择一个应用(xxx.elf);不选时可能会报错，无法启动debug，推荐选择</li><li>可以选择debug前自动编译，或者关闭自动编译<br>  <img src="/2026/09/03/Eclipse-Embedded-C-C/main_cfg.JPG" alt="MAIN"></li></ol></li><li><p>Debugger  </p><ol><li>J-Link GDB Server Setup<ul><li>注意Actual executable的路径，一定要指向实际的JLinkGDBServerCL.exe的路径</li><li>Device Name必须指定，<strong>在添加自定义设备后</strong>，可使用自定义的设备名称</li><li>其它选项自行注意</li></ul></li><li>GDB Clint Setup<ul><li>注意Actual executable的路径，指向对应的gdb<br>  <img src="/2026/09/03/Eclipse-Embedded-C-C/Debugger.JPG" alt="Debugger"></li></ul></li></ol></li><li><p>其它选项不再说明</p></li></ul></li></ol><h1 id="Jlink自定义设备"><a href="#Jlink自定义设备" class="headerlink" title="Jlink自定义设备"></a>Jlink自定义设备</h1><p>自定义设备参考链接<a href="https://blog.baimochun.xyz/2026/08/14/JFlash-OpenFlashLoader/">https://blog.baimochun.xyz/2026/08/14/JFlash-OpenFlashLoader/</a></p>]]></content>
-    
-    
-    
-  </entry>
-  
-  
-  
-  <entry>
     <title>linux内核网络协议栈</title>
     <link href="/2026/08/20/linux%E5%86%85%E6%A0%B8%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88/"/>
     <url>/2026/08/20/linux%E5%86%85%E6%A0%B8%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88/</url>
