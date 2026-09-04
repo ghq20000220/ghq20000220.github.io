@@ -21,15 +21,25 @@
   <meta name="author" content="baimochun">
   <meta name="keywords" content="">
   
-    <meta property="og:type" content="article">
+    <meta name="description" content="基础概念 MemAddr:内存地址（虚拟地址或物理地址） BlockSize：块大小，cache与主存交换的最小单位 BlockAddr：块地址，BlockAddr &#x3D; MemAddr &#x2F; BlockSize NumLines：cache line的总行数  一次读&#x2F;写访问的标准流程不管直接映射、全相联、组相联，流程本质都相同，只是要检查的行数不同：  计算块地址：把">
+<meta property="og:type" content="article">
 <meta property="og:title" content="cache三种映射方式">
 <meta property="og:url" content="https://blog.baimochun.xyz/2026/09/04/cache%E4%B8%89%E7%A7%8D%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/index.html">
 <meta property="og:site_name" content="baimochun">
+<meta property="og:description" content="基础概念 MemAddr:内存地址（虚拟地址或物理地址） BlockSize：块大小，cache与主存交换的最小单位 BlockAddr：块地址，BlockAddr &#x3D; MemAddr &#x2F; BlockSize NumLines：cache line的总行数  一次读&#x2F;写访问的标准流程不管直接映射、全相联、组相联，流程本质都相同，只是要检查的行数不同：  计算块地址：把">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.baimochun.xyz/2026/09/04/cache%E4%B8%89%E7%A7%8D%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/%E7%9B%B4%E6%8E%A5%E6%98%A0%E5%B0%84.JPG">
+<meta property="og:image" content="https://blog.baimochun.xyz/2026/09/04/cache%E4%B8%89%E7%A7%8D%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/%E5%85%A8%E7%9B%B8%E8%81%94%E6%98%A0%E5%B0%84.JPG">
+<meta property="og:image" content="https://blog.baimochun.xyz/2026/09/04/cache%E4%B8%89%E7%A7%8D%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/%E7%BB%84%E7%9B%B8%E8%81%94%E6%98%A0%E5%B0%84.JPG">
+<meta property="og:image" content="https://blog.baimochun.xyz/2026/09/04/cache%E4%B8%89%E7%A7%8D%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/bitmap.JPG">
+<meta property="og:image" content="https://blog.baimochun.xyz/2026/09/04/cache%E4%B8%89%E7%A7%8D%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/4way_set.JPG">
 <meta property="article:published_time" content="2026-09-04T00:32:40.000Z">
-<meta property="article:modified_time" content="2026-09-04T00:32:40.651Z">
+<meta property="article:modified_time" content="2026-09-04T09:45:44.165Z">
 <meta property="article:author" content="baimochun">
+<meta property="article:tag" content="cache">
+<meta property="article:tag" content="映射方式">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://blog.baimochun.xyz/2026/09/04/cache%E4%B8%89%E7%A7%8D%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/%E7%9B%B4%E6%8E%A5%E6%98%A0%E5%B0%84.JPG">
   
   
   
@@ -325,7 +335,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          0 字
+          1.1k 字
         
       </span>
     
@@ -336,7 +346,7 @@
         
         
         
-          1 分钟
+          10 分钟
         
       </span>
     
@@ -380,7 +390,55 @@
             
               <div class="markdown-body">
                 
-                
+                <h1 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h1><ul>
+<li>MemAddr:内存地址（虚拟地址或物理地址）</li>
+<li>BlockSize：块大小，cache与主存交换的最小单位</li>
+<li>BlockAddr：块地址，BlockAddr &#x3D; MemAddr &#x2F; BlockSize</li>
+<li>NumLines：cache line的总行数</li>
+</ul>
+<h1 id="一次读-写访问的标准流程"><a href="#一次读-写访问的标准流程" class="headerlink" title="一次读&#x2F;写访问的标准流程"></a>一次读&#x2F;写访问的标准流程</h1><p>不管直接映射、全相联、组相联，流程本质都相同，只是要检查的行数不同：</p>
+<ul>
+<li>计算块地址：把地址按块大小折算成“这是第几个块”</li>
+<li>根据映射方式定位候选位置：<ol>
+<li>直接映射：候选&#x3D;1行</li>
+<li>全相联：候选 &#x3D; 全部行</li>
+<li>组相联：候选 &#x3D; 1组内的k行</li>
+</ol>
+</li>
+<li>命中判定：候选行valid&#x3D;1且tag匹配则hit，否则miss</li>
+</ul>
+<h1 id="直接映射"><a href="#直接映射" class="headerlink" title="直接映射"></a>直接映射</h1><ul>
+<li>每一个内存块都映射到一个cache行</li>
+<li>LineIndex（映射的cache行号） &#x3D; BlockAddr mod NumLines<br><img src="/2026/09/04/cache%E4%B8%89%E7%A7%8D%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/%E7%9B%B4%E6%8E%A5%E6%98%A0%E5%B0%84.JPG" srcset="/img/loading.gif" lazyload alt="直接映射"></li>
+</ul>
+<h1 id="全相联映射"><a href="#全相联映射" class="headerlink" title="全相联映射"></a>全相联映射</h1><ul>
+<li>任意内存块可以映射到任意cache行<br><img src="/2026/09/04/cache%E4%B8%89%E7%A7%8D%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/%E5%85%A8%E7%9B%B8%E8%81%94%E6%98%A0%E5%B0%84.JPG" srcset="/img/loading.gif" lazyload alt="全相联映射"></li>
+</ul>
+<h1 id="组相联映射"><a href="#组相联映射" class="headerlink" title="组相联映射"></a>组相联映射</h1><ul>
+<li>将cache进行分组，一组包含多个cache行</li>
+<li>内存块以直接映射的形式，先映射到对应的组上</li>
+<li>然后以全相联的方式，映射到组内的cache行</li>
+<li>2way set，一组中有两个cacheline<br>  <img src="/2026/09/04/cache%E4%B8%89%E7%A7%8D%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/%E7%BB%84%E7%9B%B8%E8%81%94%E6%98%A0%E5%B0%84.JPG" srcset="/img/loading.gif" lazyload alt="组相联映射"></li>
+</ul>
+<h1 id="CacheLine"><a href="#CacheLine" class="headerlink" title="CacheLine"></a>CacheLine</h1><p>cachekline里通常有什么</p>
+<ul>
+<li>valid位：这行中有没有有效数据</li>
+<li>tag：这行装的是哪个主存块</li>
+<li>data：真正的数据块</li>
+<li>dirty：write-back时，标记数据是否被修改过</li>
+<li>替换信息：用于cacheline的替换</li>
+</ul>
+<h1 id="虚拟、物理地址内部划分"><a href="#虚拟、物理地址内部划分" class="headerlink" title="虚拟、物理地址内部划分"></a>虚拟、物理地址内部划分</h1><p>以Block size：64B，way &#x3D; 4为例<br><img src="/2026/09/04/cache%E4%B8%89%E7%A7%8D%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/bitmap.JPG" srcset="/img/loading.gif" lazyload alt="bitmap"></p>
+<pre><code class=" mermaid">packet
+0-5: &quot;Offset&quot;
+6-7: &quot;Index&quot;
+8-31: &quot;Tag&quot;
+</code></pre>
+
+<p><img src="/2026/09/04/cache%E4%B8%89%E7%A7%8D%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/4way_set.JPG" srcset="/img/loading.gif" lazyload alt="4 way set"></p>
+<h1 id="cache命中缺失流程"><a href="#cache命中缺失流程" class="headerlink" title="cache命中缺失流程"></a>cache命中缺失流程</h1><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><code class="hljs text">CPU 发起一次访存（给你一个地址 Addr）<br>                |<br>                v<br>      按块大小切：BlockAddr = floor(Addr / BlockSize)<br>                |<br>                v<br>      按映射方式定位候选位置（行/组）：<br>        - 直接映射：LineIndex = BlockAddr mod NumLines<br>        - 组相联：  SetIndex  = BlockAddr mod NumSets（组内 k 路都要查）<br>        - 全相联：  候选 = 全部行<br>                |<br>                v<br>      在候选行里做命中判定：<br>        若存在某行：Valid=1 且 Tag 匹配  ---&gt;  HIT<br>        否则                              ---&gt;  MISS<br>         |                                     |<br>         |                                     v<br>         |                           选空行或按替换策略挑 victim<br>         |                                     |<br>         |                      (若 write-back 且 victim Dirty=1 则先写回)<br>         |                                     |<br>         |                                     v<br>         |                           从主存取目标块，装入 Cache<br>         |                                     |<br>         v                                     v<br>  用 Offset 取块内数据/完成读写          重新访问（这次通常会 hit）<br><br></code></pre></td></tr></table></figure>
+
+
                 
               </div>
             
@@ -388,6 +446,15 @@
             <div>
               <div class="post-metas my-3">
   
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/cache/" class="print-no-link">#cache</a>
+      
+        <a href="/tags/%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/" class="print-no-link">#映射方式</a>
+      
+    </div>
   
 </div>
 
@@ -505,6 +572,21 @@
 
   
 
+
+
+  <script>
+  Fluid.utils.createScript('https://lib.baomitu.com/mermaid/8.14.0/mermaid.min.js', function() {
+    mermaid.initialize({"theme":"default"});
+
+    Fluid.utils.listenDOMLoaded(function() {
+      Fluid.events.registerRefreshCallback(function() {
+        if ('mermaid' in window) {
+          mermaid.init();
+        }
+      });
+    });
+  });
+</script>
 
 
 
