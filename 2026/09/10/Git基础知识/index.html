@@ -21,16 +21,16 @@
   <meta name="author" content="baimochun">
   <meta name="keywords" content="">
   
-    <meta name="description" content="git reset 移动头指针，暂存区和工作区保留   当push到gerrit被abandon后，可执行reset，修改后重新add commmit push    1git reset --soft HEAD~1 -">
+    <meta name="description" content="clone ssh：注意ssh端口号和http端口号（当http端口号错误时，会丢失hooks，导致后续commit时无法生成id）  1git clone &quot;ssh:&#x2F;&#x2F;gonghaoqiang@192.168.200.133:29418&#x2F;test&quot; &amp;&amp; (cd &quot;test&quot; &amp;&amp; mkdir -p &#96;git rev-p">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Git基础知识">
 <meta property="og:url" content="https://blog.baimochun.xyz/2026/09/10/Git%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/index.html">
 <meta property="og:site_name" content="baimochun">
-<meta property="og:description" content="git reset 移动头指针，暂存区和工作区保留   当push到gerrit被abandon后，可执行reset，修改后重新add commmit push    1git reset --soft HEAD~1 -">
+<meta property="og:description" content="clone ssh：注意ssh端口号和http端口号（当http端口号错误时，会丢失hooks，导致后续commit时无法生成id）  1git clone &quot;ssh:&#x2F;&#x2F;gonghaoqiang@192.168.200.133:29418&#x2F;test&quot; &amp;&amp; (cd &quot;test&quot; &amp;&amp; mkdir -p &#96;git rev-p">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://blog.baimochun.xyz/2026/09/10/Git%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/git_workflow.png">
 <meta property="article:published_time" content="2026-09-10T07:56:26.000Z">
-<meta property="article:modified_time" content="2026-09-10T09:33:58.335Z">
+<meta property="article:modified_time" content="2026-09-10T09:52:03.874Z">
 <meta property="article:author" content="baimochun">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://blog.baimochun.xyz/2026/09/10/Git%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/git_workflow.png">
@@ -329,7 +329,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          95 字
+          614 字
         
       </span>
     
@@ -340,7 +340,7 @@
         
         
         
-          1 分钟
+          6 分钟
         
       </span>
     
@@ -385,6 +385,18 @@
               <div class="markdown-body">
                 
                 <p><img src="/2026/09/10/Git%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/git_workflow.png" srcset="/img/loading.gif" lazyload alt="工作流"></p>
+<h2 id="clone"><a href="#clone" class="headerlink" title="clone"></a>clone</h2><ul>
+<li>ssh：注意ssh端口号和http端口号（当http端口号错误时，会丢失hooks，导致后续commit时无法生成id）</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">git <span class="hljs-built_in">clone</span> <span class="hljs-string">&quot;ssh://gonghaoqiang@192.168.200.133:29418/test&quot;</span> &amp;&amp; (<span class="hljs-built_in">cd</span> <span class="hljs-string">&quot;test&quot;</span> &amp;&amp; <span class="hljs-built_in">mkdir</span> -p `git rev-parse --git-dir`/hooks/ &amp;&amp; curl -Lo `git rev-parse --git-dir`/hooks/commit-msg http://192.168.200.133:8080/tools/hooks/commit-msg &amp;&amp; <span class="hljs-built_in">chmod</span> +x `git rev-parse --git-dir`/hooks/commit-msg)<br></code></pre></td></tr></table></figure>
+<ul>
+<li>http：同样注意端口号，避免clone后出现异常</li>
+</ul>
+<h2 id="push"><a href="#push" class="headerlink" title="push"></a>push</h2><ul>
+<li>push流程</li>
+</ul>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs ruby">git add xxxfile<br>git commit -m <span class="hljs-string">&quot;commit msg&quot;</span><br>git push origin <span class="hljs-variable constant_">HEAD</span><span class="hljs-symbol">:refs/for/master</span><br>git push origin <span class="hljs-variable constant_">HEAD</span><span class="hljs-symbol">:refs/for/beta</span><br></code></pre></td></tr></table></figure>
+
 <h2 id="git-reset"><a href="#git-reset" class="headerlink" title="git reset"></a>git reset</h2><ul>
 <li>移动头指针，暂存区和工作区保留  <ol>
 <li>当push到gerrit被abandon后，可执行reset，修改后重新add commmit push</li>
@@ -392,7 +404,8 @@
 </li>
 </ul>
 <figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs pgsql">git <span class="hljs-keyword">reset</span> <span class="hljs-comment">--soft HEAD~1</span><br></code></pre></td></tr></table></figure>
-<p>- </p>
+
+
 
                 
               </div>
