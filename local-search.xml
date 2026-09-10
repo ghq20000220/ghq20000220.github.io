@@ -4,6 +4,19 @@
   
   
   <entry>
+    <title>Git基础知识</title>
+    <link href="/2026/09/10/Git%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/"/>
+    <url>/2026/09/10/Git%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</url>
+    
+    <content type="html"><![CDATA[<p><img src="/2026/09/10/Git%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/git_workflow.png" alt="工作流"></p><h2 id="git-reset"><a href="#git-reset" class="headerlink" title="git reset"></a>git reset</h2><ul><li>移动头指针，暂存区和工作区保留  <ol><li>当push到gerrit被abandon后，可执行reset，修改后重新add commmit push</li></ol></li></ul><figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs pgsql">git <span class="hljs-keyword">reset</span> <span class="hljs-comment">--soft HEAD~1</span><br></code></pre></td></tr></table></figure><p>- </p>]]></content>
+    
+    
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>cache三种映射方式</title>
     <link href="/2026/09/04/cache%E4%B8%89%E7%A7%8D%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/"/>
     <url>/2026/09/04/cache%E4%B8%89%E7%A7%8D%E6%98%A0%E5%B0%84%E6%96%B9%E5%BC%8F/</url>
