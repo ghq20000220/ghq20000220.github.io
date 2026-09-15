@@ -21,15 +21,15 @@
   <meta name="author" content="baimochun">
   <meta name="keywords" content="">
   
-    <meta name="description" content="核心数据结构classDiagram      class plat_stmmacenet_data &#123;         int interface;         phy_interface_t phy_interface;         struct device_node *phy_node;         struct device_node *phylink_node;">
+    <meta name="description" content="核心数据结构start_kernel    setup_arch        setup_machine_fdt            early_init_dt_scan                early_init_dt_scan_nodes                    early_init_dt_scan_memory                        earl">
 <meta property="og:type" content="article">
 <meta property="og:title" content="baimochun">
 <meta property="og:url" content="https://blog.baimochun.xyz/2026/08/27/stmmac/index.html">
 <meta property="og:site_name" content="baimochun">
-<meta property="og:description" content="核心数据结构classDiagram      class plat_stmmacenet_data &#123;         int interface;         phy_interface_t phy_interface;         struct device_node *phy_node;         struct device_node *phylink_node;">
+<meta property="og:description" content="核心数据结构start_kernel    setup_arch        setup_machine_fdt            early_init_dt_scan                early_init_dt_scan_nodes                    early_init_dt_scan_memory                        earl">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-08-27T03:38:28.698Z">
-<meta property="article:modified_time" content="2026-08-28T09:48:51.906Z">
+<meta property="article:modified_time" content="2026-09-15T03:07:16.817Z">
 <meta property="article:author" content="baimochun">
 <meta name="twitter:card" content="summary_large_image">
   
@@ -327,7 +327,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          2.1k 字
+          762 字
         
       </span>
     
@@ -338,7 +338,7 @@
         
         
         
-          18 分钟
+          7 分钟
         
       </span>
     
@@ -382,114 +382,9 @@
             
               <div class="markdown-body">
                 
-                <h1 id="核心数据结构"><a href="#核心数据结构" class="headerlink" title="核心数据结构"></a>核心数据结构</h1><pre><code class=" mermaid">classDiagram
-
-    class plat_stmmacenet_data &#123;
-        int interface;
-        phy_interface_t phy_interface;
-        struct device_node *phy_node;
-        struct device_node *phylink_node;
-        int max_speed;
-        int tx_fifo_size;
-        int rx_fifo_size;
-        int force_sf_dma_mode;
-        int maxmtu;
-        int multicast_filter_bins;
-        int unicast_filter_entries;
-        int has_xgmac;
-        int pmt;
-        bool tso_en;
-        struct stmmac_dma_cfg *dma_cfg;
-        ...
-    &#125;
-
-    class stmmac_dma_cfg &#123;
-        int pbl;
-        int txpbl;
-        int rxpbl;
-        bool pblx8;
-        int fixed_burst;
-        int mixed_burst;
-        bool aal;
-        bool eame;
-    &#125;
-
-
-    class net_device &#123;
-        const struct net_device_ops *netdev_ops;
-        const struct ethtool_ops *ethtool_ops;
-        ...
-        void *priv;
-    &#125;
-
-    class ethtool_ops &#123;
-        u32	supported_coalesce_params;
-
-        void	(*get_drvinfo)(struct net_device *, struct ethtool_drvinfo *);
-        int	(*get_regs_len)(struct net_device *);
-        void	(*get_regs)(struct net_device *, struct ethtool_regs *, void *);
-        void	(*get_wol)(struct net_device *, struct ethtool_wolinfo *);
-        int	(*set_wol)(struct net_device *, struct ethtool_wolinfo *);
-    &#125;
-
-    class stmmac_priv &#123;
-        struct plat_stmmacenet_data *plat;
-        struct mac_device_info *hw;
-    &#125;
-
-    class mac_device_info &#123;
-        const struct stmmac_ops *mac;
-        const struct stmmac_desc_ops *desc;
-        const struct stmmac_dma_ops *dma;
-        const struct stmmac_mode_ops *mode;
-        const struct stmmac_hwtimestamp *ptp;
-        const struct stmmac_tc_ops *tc;
-        const struct stmmac_mmc_ops *mmc;
-        const struct mdio_xpcs_ops *xpcs;
-    &#125;
-
-    class stmmac_hwif_entry &#123;
-        bool gmac;
-        bool gmac4;
-        bool xgmac;
-        u32 min_id;
-        u32 dev_id;
-        const struct stmmac_regs_off regs;
-        const void *desc;
-        const void *dma;
-        const void *mac;
-        const void *hwtimestamp;
-        const void *mode;
-        const void *tc;
-        const void *mmc;
-        int (*setup)(struct stmmac_priv *priv);
-        int (*quirks)(struct stmmac_priv *priv);
-    &#125;
-
-    class net_device_ops &#123;
-        int (*ndo_init);
-        int (*ndo_open);
-        int (*ndo_stop);
-        netdev_tx_t (*ndo_start_xmit);
-        netdev_features_t (*ndo_features_check);
-    &#125;
-
-    plat_stmmacenet_data --&gt; stmmac_dma_cfg : dma_cfg
-
-    stmmac_priv --&gt; plat_stmmacenet_data : plat
-    stmmac_priv --&gt; mac_device_info : hw
-
-    net_device --&gt; stmmac_priv : priv
-    net_device --&gt; ethtool_ops : ethtool_ops
-    net_device --&gt; net_device_ops : netdev_ops
-
-    mac_device_info --&gt; stmmac_hwif_entry : mac
-    mac_device_info --&gt; stmmac_hwif_entry : dma
-    mac_device_info --&gt; stmmac_hwif_entry : desc
-
-        
-</code></pre>
-
+                <h1 id="核心数据结构"><a href="#核心数据结构" class="headerlink" title="核心数据结构"></a>核心数据结构</h1><p>start_kernel<br>    setup_arch<br>        setup_machine_fdt<br>            early_init_dt_scan<br>                early_init_dt_scan_nodes<br>                    early_init_dt_scan_memory<br>                        early_init_dt_add_memory_arch<br>                            memblock_add</p>
+<p>mmap_mem<br>    phys_mem_access_prot<br>        pfn_valid<br>            memblock_is_map_memory<br>                memblock_search &#x2F;&#x2F; 没有memory属性，就不在其中</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">pgprot_t</span> <span class="hljs-title function_">phys_mem_access_prot</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> file *file, <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> pfn,</span><br><span class="hljs-params">			      <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> size, <span class="hljs-type">pgprot_t</span> vma_prot)</span><br>&#123;<br>	<span class="hljs-keyword">if</span> (!pfn_valid(pfn))<br>		<span class="hljs-keyword">return</span> pgprot_noncached(vma_prot);<br>	<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (file-&gt;f_flags &amp; O_SYNC)<br>		<span class="hljs-keyword">return</span> pgprot_writecombine(vma_prot);<br>	<span class="hljs-keyword">return</span> vma_prot;<br>&#125;<br>EXPORT_SYMBOL(phys_mem_access_prot);<br><br><span class="hljs-type">bool</span> __init_memblock <span class="hljs-title function_">memblock_is_map_memory</span><span class="hljs-params">(<span class="hljs-type">phys_addr_t</span> addr)</span><br>&#123;<br>	<span class="hljs-type">int</span> i = memblock_search(&amp;memblock.memory, addr);<br><br>	<span class="hljs-keyword">if</span> (i == <span class="hljs-number">-1</span>)<br>		<span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;<br>	<span class="hljs-keyword">return</span> !memblock_is_nomap(&amp;memblock.memory.regions[i]);<br>&#125;<br></code></pre></td></tr></table></figure>
                 
               </div>
             
