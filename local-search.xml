@@ -12,6 +12,18 @@
     
     
     
+    <tags>
+      
+      <tag>linux</tag>
+      
+      <tag>reserved-memory</tag>
+      
+      <tag>device_type = &quot;memory&quot;</tag>
+      
+      <tag>mmap</tag>
+      
+    </tags>
+    
   </entry>
   
   
