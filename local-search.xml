@@ -12,6 +12,14 @@
     
     
     
+    <tags>
+      
+      <tag>gdb</tag>
+      
+      <tag>mmap</tag>
+      
+    </tags>
+    
   </entry>
   
   
@@ -29,11 +37,11 @@
       
       <tag>linux</tag>
       
+      <tag>mmap</tag>
+      
       <tag>reserved-memory</tag>
       
       <tag>device_type = &quot;memory&quot;</tag>
-      
-      <tag>mmap</tag>
       
     </tags>
     
