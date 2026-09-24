@@ -32,7 +32,7 @@
 <meta property="og:image" content="https://blog.baimochun.xyz/2026/09/24/arm-FVP/memory.JPG">
 <meta property="og:image" content="https://blog.baimochun.xyz/2026/09/24/arm-FVP/clocks.JPG">
 <meta property="article:published_time" content="2026-09-24T01:05:31.000Z">
-<meta property="article:modified_time" content="2026-09-24T01:26:26.594Z">
+<meta property="article:modified_time" content="2026-09-24T01:28:33.700Z">
 <meta property="article:author" content="baimochun">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://blog.baimochun.xyz/2026/09/24/arm-FVP/fvp.JPG">
@@ -398,7 +398,7 @@
 </ul>
 <h1 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h1><h2 id="ARM-Development-Studio"><a href="#ARM-Development-Studio" class="headerlink" title="ARM Development Studio"></a>ARM Development Studio</h2><ul>
 <li>安装ARM Development Studio后，伴有部分FVP可直接使用<br>  <img src="/2026/09/24/arm-FVP/fvp.JPG" srcset="/img/loading.gif" lazyload alt="预装FVP"></li>
-<li>注意配置模型参数，有些内存不能再非安全模式访问-C bp.secure_memory&#x3D;false，多核的一些模型可能需要配置上电 -C pctl.startup&#x3D;0.0.<em>.</em></li>
+<li>注意配置模型参数，有些内存不能在非安全模式访问-C bp.secure_memory&#x3D;false，多核的一些模型可能需要配置上电 -C pctl.startup&#x3D;0.0.<em>.</em></li>
 </ul>
 <h2 id="Platform-memory-map"><a href="#Platform-memory-map" class="headerlink" title="Platform memory map"></a>Platform memory map</h2><ul>
 <li>相关内存布局可在<a target="_blank" rel="noopener" href="https://documentation-service.arm.com/static/682759818f79851ff2c3ea3c">fast_models_fixed_virtual_platforms_in_arm_development_studio_reference_guide_110379_1129_00_en.pdf</a>中找到<br><img src="/2026/09/24/arm-FVP/memory.JPG" srcset="/img/loading.gif" lazyload alt="memory map"></li>
