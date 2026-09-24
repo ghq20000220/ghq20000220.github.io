@@ -4,6 +4,19 @@
   
   
   <entry>
+    <title>arm FVP</title>
+    <link href="/2026/09/24/arm-FVP/"/>
+    <url>/2026/09/24/arm-FVP/</url>
+    
+    <content type="html"><![CDATA[<p>Arm FVP（Fixed Virtual Platform，固定虚拟平台）是 Arm 官方提供的预配置仿真模型</p><h1 id="核心特点"><a href="#核心特点" class="headerlink" title="核心特点"></a>核心特点</h1><ul><li>不追求模拟硬件晶体管的行为</li><li>仅保证功能精确，确保代码在FVP上跑出的逻辑结果与在真实硬件上一致</li><li>牺牲时序精度，换取运行速度</li></ul><h1 id="FVP"><a href="#FVP" class="headerlink" title="FVP"></a>FVP</h1><ul><li>由ARM预先配置好，开箱即用</li><li>因已经预先配置，所有配置比较固定</li></ul><h1 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h1><h2 id="ARM-Development-Studio"><a href="#ARM-Development-Studio" class="headerlink" title="ARM Development Studio"></a>ARM Development Studio</h2><ul><li>安装ARM Development Studio后，伴有部分FVP可直接使用<br>  <img src="/2026/09/24/arm-FVP/fvp.JPG" alt="预装FVP"></li><li>注意配置模型参数，有些内存不能再非安全模式访问-C bp.secure_memory&#x3D;false，多核的一些模型可能需要配置上电 -C pctl.startup&#x3D;0.0.<em>.</em></li></ul><h2 id="Platform-memory-map"><a href="#Platform-memory-map" class="headerlink" title="Platform memory map"></a>Platform memory map</h2><ul><li>相关内存布局可在<a href="https://documentation-service.arm.com/static/682759818f79851ff2c3ea3c">fast_models_fixed_virtual_platforms_in_arm_development_studio_reference_guide_110379_1129_00_en.pdf</a>中找到<br><img src="/2026/09/24/arm-FVP/memory.JPG" alt="memory map"></li></ul><h2 id="Clocks"><a href="#Clocks" class="headerlink" title="Clocks"></a>Clocks</h2><p><img src="/2026/09/24/arm-FVP/clocks.JPG" alt="clocks"></p><h2 id="串口"><a href="#串口" class="headerlink" title="串口"></a>串口</h2><ul><li>FVP中带有串口，使用时需要进行初始化，串口输出会通过talent输出</li></ul><h2 id="运行linux"><a href="#运行linux" class="headerlink" title="运行linux"></a>运行linux</h2><ul><li>官方说明可以在FVP中运行linux</li><li>未尝试</li></ul>]]></content>
+    
+    
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>at24-eeprom</title>
     <link href="/2026/09/21/at24-eeprom/"/>
     <url>/2026/09/21/at24-eeprom/</url>
