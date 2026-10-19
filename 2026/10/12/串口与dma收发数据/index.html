@@ -29,7 +29,7 @@
 <meta property="og:description" content="环境 linux：5.10.227   串口：pl011   dma：pl330  硬件配置信息 pl011  fifo size:32 tx rx threshold:16   pl330单次搬移数据量固定4KB  tx dst_addr_width:1Byte direction:mem to dev dst maxburst: fifosize &gt;&gt; 1。(即16B)   rx">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-10-12T03:28:34.000Z">
-<meta property="article:modified_time" content="2026-10-19T08:40:43.552Z">
+<meta property="article:modified_time" content="2026-10-19T08:47:58.204Z">
 <meta property="article:author" content="baimochun">
 <meta name="twitter:card" content="summary_large_image">
   
@@ -327,7 +327,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          2.2k 字
+          2.4k 字
         
       </span>
     
@@ -338,7 +338,7 @@
         
         
         
-          19 分钟
+          20 分钟
         
       </span>
     
@@ -436,6 +436,12 @@
 <li>dma通过dst address寄存器，获取搬移的数据量</li>
 </ol>
 </li>
+</ul>
+<h3 id="风险点（极限状态数据可能在dma-fifo中被丢弃）"><a href="#风险点（极限状态数据可能在dma-fifo中被丢弃）" class="headerlink" title="风险点（极限状态数据可能在dma fifo中被丢弃）"></a>风险点（极限状态数据可能在dma fifo中被丢弃）</h3><ul>
+<li>pl330不支持pause</li>
+<li>当串口超时中断触发时，会强制终止dma</li>
+<li>dma会保证读取出数据到dma fifo中，或从dma fifo中将数据写到目的地址。一定会保证读或写全部完成</li>
+<li>如果dma完成了数据从外设读取到dma内部fifo，没有开始从fifo中写到目的地址。此时终止dma会导致数据丢失</li>
 </ul>
 
                 
