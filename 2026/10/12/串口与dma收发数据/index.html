@@ -21,15 +21,15 @@
   <meta name="author" content="baimochun">
   <meta name="keywords" content="">
   
-    <meta name="description" content="分析串口在开启dma时，如何进行数据的收发 环境 linux：5.10.227   串口：pl011   dma：pl330  Linux 5.10 ARM PL011 串口 RX DMA 接收流程与硬件 FIFO 溢出问题 笔记 PL011 + PL330 &#x2F; PL080，主线驱动 amba-pl011.c   结论速览 PL011 的 RX DMA 是「单描述符、非 cyclic」：">
+    <meta name="description" content="分析串口在开启dma时，如何进行数据的收发 环境 linux：5.10.227   串口：pl011   dma：pl330  硬件配置信息 pl011  fifo size:32 tx rx threshold:16   pl330  tx dst_addr_width:1Byte direction:mem to dev dst maxburst: fifosize &gt;&gt; 1。(即">
 <meta property="og:type" content="article">
 <meta property="og:title" content="串口与dma收发数据">
 <meta property="og:url" content="https://blog.baimochun.xyz/2026/10/12/%E4%B8%B2%E5%8F%A3%E4%B8%8Edma%E6%94%B6%E5%8F%91%E6%95%B0%E6%8D%AE/index.html">
 <meta property="og:site_name" content="baimochun">
-<meta property="og:description" content="分析串口在开启dma时，如何进行数据的收发 环境 linux：5.10.227   串口：pl011   dma：pl330  Linux 5.10 ARM PL011 串口 RX DMA 接收流程与硬件 FIFO 溢出问题 笔记 PL011 + PL330 &#x2F; PL080，主线驱动 amba-pl011.c   结论速览 PL011 的 RX DMA 是「单描述符、非 cyclic」：">
+<meta property="og:description" content="分析串口在开启dma时，如何进行数据的收发 环境 linux：5.10.227   串口：pl011   dma：pl330  硬件配置信息 pl011  fifo size:32 tx rx threshold:16   pl330  tx dst_addr_width:1Byte direction:mem to dev dst maxburst: fifosize &gt;&gt; 1。(即">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-10-12T03:28:34.000Z">
-<meta property="article:modified_time" content="2026-10-12T09:32:51.328Z">
+<meta property="article:modified_time" content="2026-10-15T00:52:55.181Z">
 <meta property="article:author" content="baimochun">
 <meta name="twitter:card" content="summary_large_image">
   
@@ -327,7 +327,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          9.4k 字
+          9.5k 字
         
       </span>
     
@@ -338,7 +338,7 @@
         
         
         
-          79 分钟
+          80 分钟
         
       </span>
     
@@ -387,6 +387,25 @@
 <li>linux：5.10.227  </li>
 <li>串口：pl011  </li>
 <li>dma：pl330</li>
+</ul>
+<h1 id="硬件配置信息"><a href="#硬件配置信息" class="headerlink" title="硬件配置信息"></a>硬件配置信息</h1><ul>
+<li><p>pl011</p>
+<ol>
+<li>fifo size:32</li>
+<li>tx rx threshold:16</li>
+</ol>
+</li>
+<li><p>pl330</p>
+<ul>
+<li>tx<ol>
+<li>dst_addr_width:1Byte</li>
+<li>direction:mem to dev</li>
+<li>dst maxburst: fifosize &gt;&gt; 1。(即16B)</li>
+</ol>
+</li>
+<li>rx<br>  略</li>
+</ul>
+</li>
 </ul>
 <h1 id="Linux-5-10-ARM-PL011-串口-RX-DMA-接收流程与硬件-FIFO-溢出问题-笔记"><a href="#Linux-5-10-ARM-PL011-串口-RX-DMA-接收流程与硬件-FIFO-溢出问题-笔记" class="headerlink" title="Linux 5.10 ARM PL011 串口 RX DMA 接收流程与硬件 FIFO 溢出问题 笔记"></a>Linux 5.10 ARM PL011 串口 RX DMA 接收流程与硬件 FIFO 溢出问题 笔记</h1><blockquote>
 <p>PL011 + PL330 &#x2F; PL080，主线驱动 <code>amba-pl011.c</code></p>

@@ -343,7 +343,7 @@
       
       <a class="index-excerpt index-excerpt__noimg" href="/2026/10/12/%E4%B8%B2%E5%8F%A3%E4%B8%8Edma%E6%94%B6%E5%8F%91%E6%95%B0%E6%8D%AE/" target="_self">
         <div>
-          分析串口在开启dma时，如何进行数据的收发 环境 linux：5.10.227   串口：pl011   dma：pl330  Linux 5.10 ARM PL011 串口 RX DMA 接收流程与硬件 FIFO 溢出问题 笔记 PL011 + PL330 &#x2F; PL080，主线驱动 amba-pl011.c   结论速览 PL011 的 RX DMA 是「单描述符、非 cyclic」：
+          分析串口在开启dma时，如何进行数据的收发 环境 linux：5.10.227   串口：pl011   dma：pl330  硬件配置信息 pl011  fifo size:32 tx rx threshold:16   pl330  tx dst_addr_width:1Byte direction:mem to dev dst maxburst: fifosize &gt;&gt; 1。(即
         </div>
       </a>
 
