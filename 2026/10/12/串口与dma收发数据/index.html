@@ -21,15 +21,15 @@
   <meta name="author" content="baimochun">
   <meta name="keywords" content="">
   
-    <meta name="description" content="分析串口在开启dma时，如何进行数据的收发 环境 linux：5.10.227   串口：pl011   dma：pl330  硬件配置信息 pl011  fifo size:32 tx rx threshold:16   pl330  tx dst_addr_width:1Byte direction:mem to dev dst maxburst: fifosize &gt;&gt; 1。(即">
+    <meta name="description" content="分析串口在开启dma时，如何进行数据的收发 环境 linux：5.10.227   串口：pl011   dma：pl330  硬件配置信息 pl011  fifo size:32 tx rx threshold:16   pl330单次搬移数据量固定4KB  tx dst_addr_width:1Byte direction:mem to dev dst maxburst: fifosize &amp;">
 <meta property="og:type" content="article">
 <meta property="og:title" content="串口与dma收发数据">
 <meta property="og:url" content="https://blog.baimochun.xyz/2026/10/12/%E4%B8%B2%E5%8F%A3%E4%B8%8Edma%E6%94%B6%E5%8F%91%E6%95%B0%E6%8D%AE/index.html">
 <meta property="og:site_name" content="baimochun">
-<meta property="og:description" content="分析串口在开启dma时，如何进行数据的收发 环境 linux：5.10.227   串口：pl011   dma：pl330  硬件配置信息 pl011  fifo size:32 tx rx threshold:16   pl330  tx dst_addr_width:1Byte direction:mem to dev dst maxburst: fifosize &gt;&gt; 1。(即">
+<meta property="og:description" content="分析串口在开启dma时，如何进行数据的收发 环境 linux：5.10.227   串口：pl011   dma：pl330  硬件配置信息 pl011  fifo size:32 tx rx threshold:16   pl330单次搬移数据量固定4KB  tx dst_addr_width:1Byte direction:mem to dev dst maxburst: fifosize &amp;">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-10-12T03:28:34.000Z">
-<meta property="article:modified_time" content="2026-10-15T00:52:55.181Z">
+<meta property="article:modified_time" content="2026-10-19T08:40:01.332Z">
 <meta property="article:author" content="baimochun">
 <meta name="twitter:card" content="summary_large_image">
   
@@ -327,7 +327,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          9.5k 字
+          2.2k 字
         
       </span>
     
@@ -338,7 +338,7 @@
         
         
         
-          80 分钟
+          19 分钟
         
       </span>
     
@@ -395,7 +395,7 @@
 <li>tx rx threshold:16</li>
 </ol>
 </li>
-<li><p>pl330</p>
+<li><p>pl330<br>单次搬移数据量固定4KB</p>
 <ul>
 <li>tx<ol>
 <li>dst_addr_width:1Byte</li>
@@ -403,241 +403,39 @@
 <li>dst maxburst: fifosize &gt;&gt; 1。(即16B)</li>
 </ol>
 </li>
-<li>rx<br>  略</li>
-</ul>
-</li>
-</ul>
-<h1 id="Linux-5-10-ARM-PL011-串口-RX-DMA-接收流程与硬件-FIFO-溢出问题-笔记"><a href="#Linux-5-10-ARM-PL011-串口-RX-DMA-接收流程与硬件-FIFO-溢出问题-笔记" class="headerlink" title="Linux 5.10 ARM PL011 串口 RX DMA 接收流程与硬件 FIFO 溢出问题 笔记"></a>Linux 5.10 ARM PL011 串口 RX DMA 接收流程与硬件 FIFO 溢出问题 笔记</h1><blockquote>
-<p>PL011 + PL330 &#x2F; PL080，主线驱动 <code>amba-pl011.c</code></p>
-</blockquote>
-<hr>
-<h2 id="结论速览"><a href="#结论速览" class="headerlink" title="结论速览"></a>结论速览</h2><ol>
-<li>PL011 的 RX DMA 是「单描述符、非 cyclic」：每次提交一个 scatterlist 条目，长度 <code>PL011_DMA_BUFFER_SIZE = PAGE_SIZE</code>（4K 页内核 &#x3D; 4096 字节）。</li>
-<li>DMA 完成中断在「整页搬满」时才产生一次；不足一页不会有 DMA 中断。</li>
-<li>不足一页的数据靠 PL011 自己的 RTI（接收超时中断）交付。</li>
-<li>「FIFO 到了水位就搬、一次一个 burst」是硬件 + DMAC 行为，与 CPU 无关。</li>
-<li>PL011 + PL330 在 Linux 5.10 下属于「健康路径（状态 A）」：水位 16 &gt; burst 8，DMA 不会把 FIFO 抽干，RTI 必定会触发。</li>
-<li>针对硬件 FIFO 溢出（OE）：假设 DMA 正常运行，开 DMA 可以规避。原理：读走 FIFO 的动作从「CPU 在中断里响应」变成「硬件到水位自动搬走」。</li>
+<li>rx<ol>
+<li>src_addr_width:1Byte</li>
+<li>direction:dev to mem</li>
+<li>dst maxburst: fifosize &gt;&gt; 2。(即8B)</li>
 </ol>
-<hr>
-<h2 id="1-代码位置与关键常量"><a href="#1-代码位置与关键常量" class="headerlink" title="1. 代码位置与关键常量"></a>1. 代码位置与关键常量</h2><ul>
-<li><code>drivers/tty/serial/amba-pl011.c</code>：PL011 驱动本体</li>
-<li><code>drivers/dma/pl330.c</code>：PL330 DMAC，<code>_bursts()</code> 决定请求类型</li>
-<li><code>include/linux/amba/serial.h</code>：寄存器位定义</li>
-</ul>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-meta">#<span class="hljs-keyword">define</span> PL011_DMA_BUFFER_SIZE  PAGE_SIZE      <span class="hljs-comment">/* 一次 DMA 的搬运长度 = 4096 */</span></span><br><br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">pl011_sgbuf</span> &#123;</span>                          <span class="hljs-comment">/* 每个 buffer 恰好一个 sg entry */</span><br>        <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">scatterlist</span> <span class="hljs-title">sg</span>;</span><br>        <span class="hljs-type">char</span> *buf;<br>&#125;;<br><br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">pl011_dmarx_data</span> &#123;</span><br>        <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">dma_chan</span>   *<span class="hljs-title">chan</span>;</span><br>        <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">pl011_sgbuf</span> <span class="hljs-title">sgbuf_a</span>, <span class="hljs-title">sgbuf_b</span>;</span>  <span class="hljs-comment">/* 双缓冲 A/B */</span><br>        <span class="hljs-type">dma_cookie_t</span>       cookie;<br>        <span class="hljs-type">bool</span>               running;<br>        <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">timer_list</span>  <span class="hljs-title">timer</span>;</span>             <span class="hljs-comment">/* 可选 poll 定时器 */</span><br>        <span class="hljs-type">unsigned</span> <span class="hljs-type">int</span>       last_residue;<br>        <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span>      last_jiffies;<br>        <span class="hljs-type">bool</span>               auto_poll_rate;<br>        <span class="hljs-type">unsigned</span> <span class="hljs-type">int</span>       poll_rate;<br>        <span class="hljs-type">unsigned</span> <span class="hljs-type">int</span>       poll_timeout;<br>&#125;;<br></code></pre></td></tr></table></figure>
-
-<p>RX 侧 DMA 参数（<code>pl011_dma_probe</code>）：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs c">.src_addr       = mapbase + REG_DR<br>.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE<br>.direction      = DMA_DEV_TO_MEM<br>.src_maxburst   = uap-&gt;fifosize &gt;&gt; <span class="hljs-number">2</span>   <span class="hljs-comment">/* 32 深 FIFO → 8 字节/burst */</span><br>.device_fc      = <span class="hljs-literal">false</span><br></code></pre></td></tr></table></figure>
-
-<p>TX 侧是 <code>.dst_maxburst = uap-&gt;fifosize &gt;&gt; 1</code>（发送方向不需要给 FIFO 留尾巴）。</p>
-<p>FIFO 水位（<code>pl011_startup</code> 里写 <code>REG_IFLS</code>）：</p>
-<ul>
-<li>ARM 变体 &#x3D; <code>UART011_IFLS_RX4_8</code> &#x3D; 1&#x2F;2 FIFO &#x3D; 16 字节（32 深 FIFO）</li>
-<li>ST 变体 &#x3D; <code>UART011_IFLS_RX_HALF</code> &#x3D; 32 字节（64 深 FIFO）</li>
-</ul>
-<p>DMACR：</p>
-<ul>
-<li><code>UART011_RXDMAE</code>（bit0）使能接收 DMA 请求</li>
-<li><code>UART011_TXDMAE</code>（bit1）使能发送 DMA 请求</li>
-<li><code>UART011_DMAONERR</code>（bit2）出错时硬件停止 DMA 请求 ← 启动时由驱动置上</li>
-</ul>
-<p>前置检查：如果 DMA 控制器汇报 <code>residue_granularity == DMA_RESIDUE_GRANULARITY_DESCRIPTOR</code>，驱动直接禁用 RX DMA（全流程依赖 residue）：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text">&quot;RX DMA disabled - no residue processing&quot;<br></code></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="2-接收流程（DMA-模式）"><a href="#2-接收流程（DMA-模式）" class="headerlink" title="2. 接收流程（DMA 模式）"></a>2. 接收流程（DMA 模式）</h2><h3 id="2-1-启动"><a href="#2-1-启动" class="headerlink" title="2.1 启动"></a>2.1 启动</h3><p><code>pl011_startup</code> → <code>pl011_dma_startup</code> → <code>pl011_dma_probe</code>（申请 tx&#x2F;rx 通道、<code>slave_config</code>）→ 置 <code>DMAONERR</code> → <code>pl011_dma_rx_trigger_dma()</code>：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs c">desc = dmaengine_prep_slave_sg(rxchan, &amp;sgbuf-&gt;sg, <span class="hljs-number">1</span>, DMA_DEV_TO_MEM,<br>                               DMA_PREP_INTERRUPT | DMA_CTRL_ACK);<br>desc-&gt;callback = pl011_dma_rx_callback;<br>dmarx-&gt;cookie = dmaengine_submit(desc);<br>dma_async_issue_pending(rxchan);<br>uap-&gt;dmacr |= UART011_RXDMAE;   <span class="hljs-comment">/* 打开 UART 的 RX DMA 请求 */</span><br>uap-&gt;im    &amp;= ~UART011_RXIM;    <span class="hljs-comment">/* 关掉 FIFO 阈值中断 */</span><br></code></pre></td></tr></table></figure>
-
-<p><code>pl011_enable_interrupts()</code> 里 <code>im = RTIM</code>（DMA 在跑时不再补 <code>RXIM</code>），也就是 DMA 模式下只有超时中断和 modem 中断能打断 CPU。</p>
-<h3 id="2-2-硬件握手（无中断、无-CPU）"><a href="#2-2-硬件握手（无中断、无-CPU）" class="headerlink" title="2.2 硬件握手（无中断、无 CPU）"></a>2.2 硬件握手（无中断、无 CPU）</h3><p>RX FIFO 超过水位 → PL011 断言突发请求 → DMAC 按 burst 搬运 → FIFO 降回水位下 → 请求撤销 → 再涨到水位再搬……直到整页（4096）搬满 → DMA 完成中断。</p>
-<h3 id="2-3-路径-A：整页搬满-→-DMA-完成中断-→-pl011-dma-rx-callback"><a href="#2-3-路径-A：整页搬满-→-DMA-完成中断-→-pl011-dma-rx-callback" class="headerlink" title="2.3 路径 A：整页搬满 → DMA 完成中断 → pl011_dma_rx_callback()"></a>2.3 路径 A：整页搬满 → DMA 完成中断 → <code>pl011_dma_rx_callback()</code></h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs text">device_tx_status() 取 residue<br>pending = sg.length - residue        （正常就是 4096）<br>dmaengine_terminate_all()<br>切到另一块 buffer → pl011_dma_rx_trigger_dma() 立刻重新点火<br>pl011_dma_rx_chars(pending, lastbuf, readfifo = false)  ← 不动 FIFO<br></code></pre></td></tr></table></figure>
-
-<h3 id="2-4-路径-B：不足一页-→-RTI（接收超时中断）→-pl011-int-→-pl011-dma-rx-irq"><a href="#2-4-路径-B：不足一页-→-RTI（接收超时中断）→-pl011-int-→-pl011-dma-rx-irq" class="headerlink" title="2.4 路径 B：不足一页 → RTI（接收超时中断）→ pl011_int → pl011_dma_rx_irq()"></a>2.4 路径 B：不足一页 → RTI（接收超时中断）→ <code>pl011_int</code> → <code>pl011_dma_rx_irq()</code></h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs text">dmaengine_pause()                    ← 必须先暂停再读计数<br>device_tx_status() 取 residue<br>dmacr &amp;= ~RXDMAE                     ← 关请求，数据先留在 FIFO<br>dmaengine_terminate_all()<br>pl011_dma_rx_chars(pending, use_buf_b, readfifo = true)<br>    ├─ 先从 DMA buffer 取 pending 字节送 tty<br>    └─ 若全部塞入成功，再 pl011_fifo_to_tty() 把 FIFO 尾段读走（最多 256）<br>切 A/B buffer → pl011_dma_rx_trigger_dma() 重新点火<br></code></pre></td></tr></table></figure>
-
-<h3 id="2-5-路径-C：接收错误（OE-BE-PE-FE）"><a href="#2-5-路径-C：接收错误（OE-BE-PE-FE）" class="headerlink" title="2.5 路径 C：接收错误（OE&#x2F;BE&#x2F;PE&#x2F;FE）"></a>2.5 路径 C：接收错误（OE&#x2F;BE&#x2F;PE&#x2F;FE）</h3><p>因为 <code>DMAONERR</code> 已置位，硬件会自动停掉 RX DMA 请求，数据堆在 FIFO；驱动的错误中断位（<code>OEIM</code>&#x2F;<code>FEIM</code>&#x2F;…）并未使能，最终仍走 RTI 路径，由 <code>pl011_dma_rx_chars()</code> 里的：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">pl011_write(UART011_OEIS|BEIS|PEIS|FEIS, uap, REG_ICR)<br></code></pre></td></tr></table></figure>
-
-<p>清标志，然后重新 trigger DMA。</p>
-<h3 id="2-6-路径-D（可选）：poll-定时器"><a href="#2-6-路径-D（可选）：poll-定时器" class="headerlink" title="2.6 路径 D（可选）：poll 定时器"></a>2.6 路径 D（可选）：poll 定时器</h3><p>见第 6 节。</p>
-<hr>
-<h2 id="3-DMA-中断到底要多少数据才触发"><a href="#3-DMA-中断到底要多少数据才触发" class="headerlink" title="3. DMA 中断到底要多少数据才触发"></a>3. DMA 中断到底要多少数据才触发</h2><ul>
-<li>一次 DMA 完成中断 &#x3D; 一个描述符搬完 &#x3D; <code>PL011_DMA_BUFFER_SIZE = PAGE_SIZE</code><ul>
-<li>4K 页内核：4096 字节</li>
-<li>16K &#x2F; 64K 页内核：16384 &#x2F; 65536 字节</li>
+</li>
 </ul>
 </li>
-<li>每个 burst（8 字节）、每次水位跨越，都<strong>不</strong>产生中断。</li>
-<li>非 cyclic、只有一个 sg entry，所以没有半传输中断。</li>
-<li>不足一页的数据：不会产生 DMA 中断，只能靠 RTI 交付。</li>
 </ul>
-<p>DMA 完成回调里的注释印证：</p>
-<blockquote>
-<p>“This completion interrupt occurs typically when the RX buffer is totally stuffed but no timeout has yet occurred.”</p>
-</blockquote>
-<hr>
-<h2 id="4-RTI（接收超时中断）的触发条件"><a href="#4-RTI（接收超时中断）的触发条件" class="headerlink" title="4. RTI（接收超时中断）的触发条件"></a>4. RTI（接收超时中断）的触发条件</h2><p>ARM 文档原文（Linux&#x2F;QEMU&#x2F;Xen 多方引用一致）：</p>
-<blockquote>
-<p>“The receive timeout interrupt is asserted when the receive FIFO is not empty, and no more data is received over a 32-bit period. The receive timeout interrupt is cleared either when the FIFO becomes empty through reading all the data (or by reading the holding register), or when a 1 is written to the corresponding bit of the UARTICR register.”</p>
-</blockquote>
-<p>拆解：</p>
-<ol>
-<li><code>IMSC.RTIM = 1</code>（bit6）—— 软件使能；Linux 在 DMA 模式下始终保留</li>
-<li><code>RIS.RTIS = 1</code>（bit6）—— 硬件条件：FIFO 非空 + 32 bit 时间无新数据</li>
-<li><code>LCR_H.FEN = 1</code> —— FIFO 模式（驱动 <code>fifosize &gt; 1</code> 时必置）</li>
-<li>IRQ 线路通（合并 <code>UARTINTR</code> 或独立 <code>UARTRTINTR</code>）</li>
+<h1 id="rx驱动逻辑"><a href="#rx驱动逻辑" class="headerlink" title="rx驱动逻辑"></a>rx驱动逻辑</h1><p>串口的接收由中断驱动，在中断中将fifo里的数据读取出，传递给tty。tty缓存最大是640KB</p>
+<h2 id="中断注册"><a href="#中断注册" class="headerlink" title="中断注册"></a>中断注册</h2><ul>
+<li>在pl011_startup中通过pl011_allocate_irq注册pl011_int中断服务函数  <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs text">pl011_startup<br>    pl011_allocate_irq<br>        request_irq(pl011_int)<br></code></pre></td></tr></table></figure></li>
+<li>相关代码  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">static</span> <span class="hljs-type">int</span> <span class="hljs-title function_">pl011_allocate_irq</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> uart_amba_port *uap)</span><br>&#123;<br>    pl011_write(uap-&gt;im, uap, REG_IMSC);<br><br>    <span class="hljs-keyword">return</span> request_irq(uap-&gt;port.irq, pl011_int, IRQF_SHARED, <span class="hljs-string">&quot;uart-pl011&quot;</span>, uap);<br>&#125;<br><br><span class="hljs-type">static</span> <span class="hljs-type">irqreturn_t</span> <span class="hljs-title function_">pl011_int</span><span class="hljs-params">(<span class="hljs-type">int</span> irq, <span class="hljs-type">void</span> *dev_id)</span><br>&#123;<br>    <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">uart_amba_port</span> *<span class="hljs-title">uap</span> =</span> dev_id;<br>    <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> flags;<br>    <span class="hljs-type">unsigned</span> <span class="hljs-type">int</span> status, pass_counter = AMBA_ISR_PASS_LIMIT;<br>    <span class="hljs-type">int</span> handled = <span class="hljs-number">0</span>;<br><br>    spin_lock_irqsave(&amp;uap-&gt;port.lock, flags);<br>    status = pl011_read(uap, REG_RIS) &amp; uap-&gt;im;<br>    <span class="hljs-keyword">if</span> (status) &#123;<br>        <span class="hljs-keyword">do</span> &#123;<br>            check_apply_cts_event_workaround(uap);<br><br>            pl011_write(status &amp; ~(UART011_TXIS|UART011_RTIS|<br>                        UART011_RXIS),<br>                    uap, REG_ICR);<br><br>            <span class="hljs-keyword">if</span> (status &amp; (UART011_RTIS|UART011_RXIS)) &#123;<br>                <span class="hljs-keyword">if</span> (pl011_dma_rx_running(uap))<br>                    pl011_dma_rx_irq(uap);<br>                <span class="hljs-keyword">else</span><br>                    pl011_rx_chars(uap);<br>            &#125;<br>            <span class="hljs-keyword">if</span> (status &amp; (UART011_DSRMIS|UART011_DCDMIS|<br>                    UART011_CTSMIS|UART011_RIMIS))<br>                pl011_modem_status(uap);<br>            <span class="hljs-keyword">if</span> (status &amp; UART011_TXIS)<br>                pl011_tx_chars(uap, <span class="hljs-literal">true</span>);<br><br>            <span class="hljs-keyword">if</span> (pass_counter-- == <span class="hljs-number">0</span>)<br>                <span class="hljs-keyword">break</span>;<br><br>            status = pl011_read(uap, REG_RIS) &amp; uap-&gt;im;<br>        &#125; <span class="hljs-keyword">while</span> (status != <span class="hljs-number">0</span>);<br>        handled = <span class="hljs-number">1</span>;<br>    &#125;<br><br>    spin_unlock_irqrestore(&amp;uap-&gt;port.lock, flags);<br><br>    <span class="hljs-keyword">return</span> IRQ_RETVAL(handled);<br>&#125;<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="中断处理"><a href="#中断处理" class="headerlink" title="中断处理"></a>中断处理</h2><h3 id="无dma流程"><a href="#无dma流程" class="headerlink" title="无dma流程"></a>无dma流程</h3><ul>
+<li>没有dma时，rx会使能两种中断UART011_RTIS（receive timeout）和UART011_RXIS（receive interrupt）</li>
+<li>rx fifo到阈值后即触发UART011_RXIS中断</li>
+<li>当连续32bit时间没有数据后即触发UART011_RTIS</li>
+<li>中断触发后cpu将数据从串口硬件fifo中取出</li>
+</ul>
+<h3 id="有dma流程"><a href="#有dma流程" class="headerlink" title="有dma流程"></a>有dma流程</h3><ul>
+<li>有dma时，rx仅使能UART011_RTIS（receive timeout）中断</li>
+<li>在rx fifo到达阈值（16B）时，串口发出信号给dma，dma进行数据搬移，当fifo中的数据低于16B后，信号消失，dma停止搬数<ol>
+<li>当dma搬数到达4KB时，触发dma完成中断，此时将dma搬运的数据传递给tty</li>
+<li>当dma搬数不足4KB时，dma中断无法触发，由于dma不会将fifo抽干，连续32bit时间没有数据后即触发UART011_RTIS，进入串口中断，在串口中断中将dma已经搬完的数据给tty，然后cpu将fifo中剩余的数据读出给tty</li>
 </ol>
-<p>时间与波特率相关，32 个 bit 时间 &#x3D; <code>32 / baud</code>：</p>
-<ul>
-<li>115200 → 约 278 µs</li>
-<li>9600 → 约 3.33 ms</li>
-<li>300 → 约 107 ms</li>
-</ul>
-<p>要点：</p>
-<ul>
-<li>每收到一个新字符，32 bit 时间的计数器就重新开始（连续的流永不超时）。</li>
-<li>判据是「FIFO 非空」这个状态，与是否跨过 IFLS&#x2F;RXIS 阈值无关。</li>
-<li>FIFO 被读空 → 条件不成立，中断自动撤销；也可写 <code>ICR.RTIC</code> 清。</li>
-<li>Linux 的 <code>pl011_int()</code> 特意不把 <code>RTIS</code>&#x2F;<code>RXIS</code> 写进 <code>ICR</code>：</li>
-</ul>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">pl011_write(status &amp; ~(UART011_TXIS|UART011_RTIS|UART011_RXIS), uap, REG_ICR);<br></code></pre></td></tr></table></figure>
-
-<p>靠把 FIFO 读空自然撤销，避免误清丢事件。</p>
-<ul>
-<li>ST 变体有可编程超时寄存器 <code>ST_UART011_TIMEOUT</code>（偏移 <code>0x0C</code>），主线驱动不用。</li>
-</ul>
-<hr>
-<h2 id="5-关键判据：水位（IFLS）与-burst（maxburst）的大小关系"><a href="#5-关键判据：水位（IFLS）与-burst（maxburst）的大小关系" class="headerlink" title="5. 关键判据：水位（IFLS）与 burst（maxburst）的大小关系"></a>5. 关键判据：水位（IFLS）与 burst（maxburst）的大小关系</h2><p>PL011 有四条 DMA 请求线（refman 原文）：</p>
-<ul>
-<li><code>UARTRXDMASREQ</code>：单字符请求：FIFO 含至少 1 个字符即断言</li>
-<li><code>UARTRXDMABREQ</code>：突发请求：FIFO 字符数超过 IFLS 编程的水位时断言</li>
-<li><code>UARTRXDMACLR</code>：由 DMAC 断言，清除接收请求；突发传输时在 burst 最后一个数据传输期间断言</li>
-</ul>
-<p>所以「一次搬多少」&#x3D; DMAC 配的 burst 长度，不是「FIFO 里有多少」。burst 是不可打断的传输组，做完才重新采样请求线。</p>
-<table>
-<thead>
-<tr>
-<th>配置</th>
-<th>一次授权后</th>
-<th>FIFO 留尾巴</th>
-<th>RTI</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>水位 16 &gt; burst 8（Linux 默认）</td>
-<td>16 → 8，请求撤销</td>
-<td>留 8~15 字节</td>
-<td>必触发</td>
-</tr>
-<tr>
-<td>水位 16 &#x3D; burst 16</td>
-<td>16 → 0</td>
-<td>抽干</td>
-<td>不触发</td>
-</tr>
-<tr>
-<td>水位 4 &lt; burst 8</td>
-<td>4 → 0（整数倍搬空）</td>
-<td>抽干</td>
-<td>不触发</td>
-</tr>
-</tbody></table>
-<p>三种状态：</p>
-<ul>
-<li><strong>状态 A（健康）</strong>：停手时 FIFO 非空 → RTI 必来 → 数据不丢不延迟。</li>
-<li><strong>状态 B（延迟）</strong>：FIFO 被抽干但后续还有数据 → 下一批触发 RTI 或整页满才交付。</li>
-<li><strong>状态 C（滞留）</strong>：FIFO 被抽干且对端不再发 → 数据卡在 DMA buffer，上层读不到。</li>
-</ul>
-<p>历史佐证（2013 LKML「PL011 Rx DMA buffer polling」讨论）：</p>
-<ul>
-<li>Chanho Min：4096 字节由 DMA 中断收到，但剩下 904 字节拿不到，除非再来 3192 字节。（状态 C）</li>
-<li>Linus Walleij：理论上 16 个字符会被两个 burst 搬空、FIFO 为空、页未满，既无 TC 中断也无 RTI；但他在 U300&#x2F;Ux500 上从未复现，怀疑 PL011 IP 在 burst 信号逻辑上做了处理。</li>
-<li>Russell King：在 Versatile（PL080+PL011）上确实遇到，最后选择完全不开 RX DMA。</li>
-</ul>
-<hr>
-<h2 id="6-auto-poll（可选软件轮询）"><a href="#6-auto-poll（可选软件轮询）" class="headerlink" title="6. auto-poll（可选软件轮询）"></a>6. auto-poll（可选软件轮询）</h2><p>是什么：用一个内核定时器周期性读 DMA residue，把「已搬进内存、但还没有任何中断交付」的字节直接塞给 tty；不打断 DMA、不 terminate 描述符。</p>
-<p>核心函数 <code>pl011_dma_rx_poll()</code>：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs text">device_tx_status() 取 residue<br>交付区间 [last_residue, residue)  → tty_insert_flip_string<br>mod_timer(...) 继续；若超过 poll_timeout 无数据 → 停 DMA、开 RXIM、<br>terminate、删定时器，回落到纯中断模式<br></code></pre></td></tr></table></figure>
-
-<p>去重：<code>pl011_dma_rx_chars()</code> 里 <code>dmataken = sg.length - last_residue</code>，跳过轮询已交付的字节；交付完把 <code>last_residue</code> 重置为整页。</p>
-<p>如何打开：</p>
-<p>DT（5.10 binding 有文档 <code>Documentation/devicetree/bindings/serial/pl011.yaml</code>）：</p>
-<figure class="highlight dts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs dts"><span class="hljs-attr">auto-poll</span><span class="hljs-punctuation">;</span>                  <span class="hljs-comment">/* 必须显式打开，否则下面两个无效 */</span><br><span class="hljs-attr">poll-rate-ms</span> <span class="hljs-operator">=</span> <span class="hljs-params">&lt;<span class="hljs-number">10</span>&gt;</span><span class="hljs-punctuation">;</span>        <span class="hljs-comment">/* 默认 100 */</span><br><span class="hljs-attr">poll-timeout-ms</span> <span class="hljs-operator">=</span> <span class="hljs-params">&lt;<span class="hljs-number">3000</span>&gt;</span><span class="hljs-punctuation">;</span>   <span class="hljs-comment">/* 默认 3000 */</span><br></code></pre></td></tr></table></figure>
-
-<p>或平台数据：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">amba_pl011_data</span> &#123;</span><br>        .dma_rx_poll_enable = <span class="hljs-literal">true</span>;<br>        ...<br>&#125;;<br></code></pre></td></tr></table></figure>
-
-<p>⚠ 已知坑：DT 分支不会清 <code>auto_poll_rate</code>（5.10 与 6.6 都一样），于是每次 <code>pl011_set_termios()</code>（打开端口、<code>stty</code>、改波特率）都会覆盖：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-keyword">if</span> (uap-&gt;dmarx.auto_poll_rate)<br>        uap-&gt;dmarx.poll_rate = DIV_ROUND_UP(<span class="hljs-number">10000000</span>, baud);<br></code></pre></td></tr></table></figure>
-
-<p>即 115200 → 87 ms，3 Mbps → 4 ms，9600 → 1042 ms。想固定周期只能走平台数据路径或改驱动。平台数据分支会正确把 <code>auto_poll_rate</code> 置 <code>false</code>。</p>
-<p>代价：每 <code>poll_rate</code> 一次定时器唤醒，妨碍 CPU 深度 idle、影响省电与实时性。默认关闭是对的，只在确实出现状态 B&#x2F;C 时才开。</p>
-<hr>
-<h2 id="7-PL011-PL330-在-Linux-5-10-下属于哪种状态"><a href="#7-PL011-PL330-在-Linux-5-10-下属于哪种状态" class="headerlink" title="7. PL011 + PL330 在 Linux 5.10 下属于哪种状态"></a>7. PL011 + PL330 在 Linux 5.10 下属于哪种状态</h2><p>代码证据链（<code>drivers/dma/pl330.c</code>）：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs text">pl330_config_write(): pch-&gt;burst_len = fixup_burst_len(src_maxburst)   /* = 8 */<br>pl330_prep_slave_sg(): desc-&gt;rqcfg.brst_len = pch-&gt;burst_len<br>_prepare_ccr():        CCR.SRCBRSTLEN/DSTBRSTLEN = brst_len<br>_bursts():             cond = BRST_LEN(ccr) &gt; 1 ? BURST : SINGLE<br>                       → 8 &gt; 1 → BURST<br>_ldst_peripheral(cond=BURST):  DMAFLUSHP → [DMAWFPB → DMALDPB → DMAST] × N<br></code></pre></td></tr></table></figure>
-
-<p>即：PL330 等的是外设的「突发请求」，一次请求搬一个 burst &#x3D; 8 字节。</p>
-<p>结论：PL011 水位 16 &gt; burst 8，每次授权后 FIFO 从 ≥16 掉到 ≥8，请求撤销，停手时必留 8~15 字节 → RTI 必触发 → <strong>状态 A（健康路径）</strong>。2013 年 Linus 担心的「整数倍突发被搬空」在这个组合下不会发生。</p>
-<p>附带结论：</p>
-<ul>
-<li><code>residue_granularity = DMA_RESIDUE_GRANULARITY_BURST</code>，且 <code>pl330_tx_status()</code> 通过读 SA&#x2F;DA 寄存器算出字节级 residue，满足 PL011 驱动的前置要求。</li>
-<li><code>arm,pl330-periph-burst</code> quirk 对 PL011 RX 无影响（<code>burst_len</code> 已是 8 &gt; 1）；它只对 <code>burst_len == 1</code>（<code>maxburst</code> 配成 1）的场景有意义。</li>
-<li>唯一无法从代码确定的是 SoC 把 PL011 的哪根请求线接到 PL330：<ul>
-<li>接 <code>UARTRXDMABREQ</code>（水位型）→ 与 BURST cond 匹配 → 状态 A；</li>
-<li>接 <code>UARTRXDMASREQ</code>（非空型）→ 不匹配，会超读，属于显然不能工作的接线。</li>
-</ul>
 </li>
-</ul>
-<hr>
-<h2 id="8-硬件-FIFO-溢出（OE）与开-DMA-的关系-★最终结论★"><a href="#8-硬件-FIFO-溢出（OE）与开-DMA-的关系-★最终结论★" class="headerlink" title="8. 硬件 FIFO 溢出（OE）与开 DMA 的关系 ★最终结论★"></a>8. 硬件 FIFO 溢出（OE）与开 DMA 的关系 ★最终结论★</h2><p>前提：假设 DMA 能正常运行。</p>
-<p>结论：能规避。</p>
-<p>原因：</p>
-<p>OE 的充分条件是「FIFO 满（32 字节）时没人把它读走」。</p>
-<ul>
-<li><p><strong>PIO 模式</strong>：读走依赖 CPU 在中断里响应，窗口只有 <code>(32 - 16) = 16</code> 字节的时间</p>
-<ul>
-<li>115200 → 1.39 ms</li>
-<li>460800 → 347 µs</li>
-<li>1 Mbps → 160 µs</li>
-<li>4 Mbps → 40 µs</li>
-</ul>
-<p>任何超过窗口的中断延迟（长 spinlock、关中断、IRQ 风暴、CPU 降频等）都 OE。</p>
-</li>
-<li><p><strong>DMA 模式</strong>：FIFO 一到水位（16 字节）硬件就发请求、DMAC 直接把数据搬进内存，全程不需要 CPU 参与；CPU 晚几十毫秒也不影响 FIFO 被抽干。有效缓冲从 32 字节变成 4KB（<code>PAGE_SIZE</code>）的 DMA 页。</p>
-</li>
-</ul>
-<p>对「单次交互 &lt; 一页」的流量：</p>
-<ul>
-<li>硬件 FIFO 由 DMA 实时抽空 → 不再 OE；</li>
-<li>由于不足一页，DMA 完成中断基本用不到，收尾全部走 RTI（32 bit 时间的固有延迟）；</li>
-<li>若上层来不及消费，丢数据发生在 tty 层（<code>icount.buf_overrun</code>），不再是硬件 OE。</li>
-</ul>
-<p>唯一残留窗口：<code>pl011_dma_rx_irq()</code> 里先把 <code>RXDMAE</code> 关掉、交付完再重新打开的几微秒，此期间只有 32 字节 FIFO 顶着。按小包 + 包间有空档的流量特征，这个窗口远小于填满 32 字节所需时间，实际不会溢出。</p>
-<p>补充（连续大流量才需要关注的失效模式）：</p>
-<ul>
-<li><code>DMAONERR</code>：一旦真的发生一次溢出，硬件会停掉 RX DMA 请求，错误标志要等 RTI 路径来清。连续不断的流可能长时间没有 32 bit 空档 → 可能停在「溢出—DMA 停—继续溢出」状态，直到流中断才自愈。小包&#x2F;请求-响应型流量天然有空档，会自愈得快。<code>auto-poll</code> 对此<strong>没有</strong>帮助：它只读 residue 交数据，不碰错误标志，也不重新使能 <code>RXDMAE</code>。</li>
-<li>4KB 页填满后，DMA 完成回调跑在 tasklet&#x2F;软中断里，若被长时间延迟，FIFO 也可能溢出（连续流才会命中）。</li>
-</ul>
-<hr>
-<h2 id="9-诊断与验证命令"><a href="#9-诊断与验证命令" class="headerlink" title="9. 诊断与验证命令"></a>9. 诊断与验证命令</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 硬件 FIFO 溢出 vs 软件丢字节（需要 root 才打印计数字段）</span><br><span class="hljs-built_in">cat</span> /proc/tty/driver/ttyAMA<br><span class="hljs-comment">#   0: uart:PL011 rev3 mmio:0x... irq:33 tx:.. rx:.. oe:N bo:M</span><br><span class="hljs-comment">#   oe = icount.overrun     硬件 FIFO 溢出（UART011_DR_OE）</span><br><span class="hljs-comment">#   bo = icount.buf_overrun tty 缓冲满丢字节（tty_insert_flip_char 返回 0）</span><br><br><span class="hljs-comment"># 确认 RX DMA 真的起来了（而不是悄悄退回中断模式）</span><br>dmesg | grep -i <span class="hljs-string">&quot;DMA channel&quot;</span>     <span class="hljs-comment"># 期望同时有 &quot;DMA channel TX ...&quot; 和 &quot;DMA channel RX ...&quot;</span><br><br><span class="hljs-comment"># 中断来源指纹</span><br><span class="hljs-built_in">cat</span> /proc/interrupts<br><span class="hljs-comment">#   交互敲键 → uart/pl011 计数涨；大批量传输 → DMAC 大约每 4KB 涨一次</span><br><br><span class="hljs-comment"># 每包「两段」分布（dynamic debug）</span><br><span class="hljs-built_in">echo</span> <span class="hljs-string">&#x27;file amba-pl011.c +p&#x27;</span> &gt; /sys/kernel/debug/dynamic_debug/control<br>dmesg -w | grep <span class="hljs-string">&quot;Took&quot;</span><br><span class="hljs-comment">#   &quot;Took %d chars from DMA buffer and %d chars from the FIFO&quot;</span><br><span class="hljs-comment">#   发 8 字节(&lt;水位)  → 期望 0 and 8</span><br><span class="hljs-comment">#   发 16 字节(=水位) → 8 and 8 或 0 and 16（取决于「≥水位」还是「&gt;水位」）</span><br><br><span class="hljs-comment"># 驱动自带的两条关键告警</span><br><span class="hljs-comment">#   could not retrigger RX DMA job, fall back to interrupt mode</span><br><span class="hljs-comment">#   couldn&#x27;t insert all characters (TTY is full?)</span><br></code></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="10-参考"><a href="#10-参考" class="headerlink" title="10. 参考"></a>10. 参考</h2><ul>
-<li><code>drivers/tty/serial/amba-pl011.c</code> @ v5.10<br><a target="_blank" rel="noopener" href="https://raw.githubusercontent.com/torvalds/linux/v5.10/drivers/tty/serial/amba-pl011.c">https://raw.githubusercontent.com/torvalds/linux/v5.10/drivers/tty/serial/amba-pl011.c</a></li>
-<li><code>drivers/dma/pl330.c</code> @ v5.10<br><a target="_blank" rel="noopener" href="https://raw.githubusercontent.com/torvalds/linux/v5.10/drivers/dma/pl330.c">https://raw.githubusercontent.com/torvalds/linux/v5.10/drivers/dma/pl330.c</a></li>
-<li><code>include/linux/amba/serial.h</code> @ v5.10<br><a target="_blank" rel="noopener" href="https://raw.githubusercontent.com/torvalds/linux/v5.10/include/linux/amba/serial.h">https://raw.githubusercontent.com/torvalds/linux/v5.10/include/linux/amba/serial.h</a></li>
-<li><code>Documentation/devicetree/bindings/serial/pl011.yaml</code> @ v5.10（auto-poll 等属性）</li>
-<li><code>drivers/tty/serial/serial_core.c</code> @ v5.10（<code>uart_proc_show</code> &#x2F; <code>uart_insert_char</code> &#x2F; <code>uart_throttle</code>）</li>
-<li>2013 LKML 讨论「ARM: PL011: Add support for Rx DMA buffer polling」<ul>
-<li><a target="_blank" rel="noopener" href="https://lkml.iu.edu/hypermail/linux/kernel/1301.1/02536.html">https://lkml.iu.edu/hypermail/linux/kernel/1301.1/02536.html</a> （refman 请求线原文）</li>
-<li><a target="_blank" rel="noopener" href="https://lkml.iu.edu/hypermail/linux/kernel/1301.1/03073.html">https://lkml.iu.edu/hypermail/linux/kernel/1301.1/03073.html</a> （16 字符被搬空的理论分析）</li>
-<li><a target="_blank" rel="noopener" href="https://lkml.iu.edu/hypermail/linux/kernel/1301.1/03074.html">https://lkml.iu.edu/hypermail/linux/kernel/1301.1/03074.html</a> （Versatile 上的实际复现）</li>
-</ul>
-</li>
-<li>QEMU PL011 补丁（引用 TRM 的 RTI 原文与 IFLS 编码）<ul>
-<li><a target="_blank" rel="noopener" href="https://lists.gnu.org/archive/html/qemu-arm/2026-03/msg01321.html">https://lists.gnu.org/archive/html/qemu-arm/2026-03/msg01321.html</a></li>
-<li><a target="_blank" rel="noopener" href="https://lists.gnu.org/archive/html/qemu-arm/2026-03/msg01322.html">https://lists.gnu.org/archive/html/qemu-arm/2026-03/msg01322.html</a></li>
-</ul>
+<li>信息点：<ol>
+<li>fifo阈值与dma的maxburst不同，dma一定不会将fifo抽干。避免当dma中断不触发时，串口中没有数据导致串口超时不触发。致使数据卡在dma fifo中没有向上层tty传递</li>
+<li>dma启动后的搬数量在pl011中固定为4KB</li>
+<li>给dma申请了两个buffer，dma将数据搬移到buffer后，仍然需要cpu将数据复制到tty中</li>
+<li>dma通过dst address寄存器，获取搬移的数据量</li>
+</ol>
 </li>
 </ul>
 
