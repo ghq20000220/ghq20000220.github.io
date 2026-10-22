@@ -1,0 +1,858 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+    <link rel="canonical" href="https://blog.baimochun.xyz/2026/10/20/SocketCAN/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="baimochun">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="自SocketCAN子系统被并入内核主干，就将CAN驱动纳入了标准的网络子系统框架之下。也就是说CAN和以太网驱动一样使用的是同一套底层基础设施。 CAN配置 在Networking support中打开CAN bus subsystem support 目前启用了部分协议 在设备驱动中使能CAST CAN控制器  123456789Networking support    [*]CAN bus">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SocketCAN">
+<meta property="og:url" content="https://blog.baimochun.xyz/2026/10/20/SocketCAN/index.html">
+<meta property="og:site_name" content="baimochun">
+<meta property="og:description" content="自SocketCAN子系统被并入内核主干，就将CAN驱动纳入了标准的网络子系统框架之下。也就是说CAN和以太网驱动一样使用的是同一套底层基础设施。 CAN配置 在Networking support中打开CAN bus subsystem support 目前启用了部分协议 在设备驱动中使能CAST CAN控制器  123456789Networking support    [*]CAN bus">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-10-20T00:56:20.000Z">
+<meta property="article:modified_time" content="2026-10-22T07:48:21.163Z">
+<meta property="article:author" content="baimochun">
+<meta property="article:tag" content="CAN">
+<meta property="article:tag" content="Socket">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>SocketCAN - baimochun</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"blog.baimochun.xyz","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="SocketCAN"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-10-20 08:56" pubdate>
+          2026年10月20日 早上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          11k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          91 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">SocketCAN</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>自SocketCAN子系统被并入内核主干，就将CAN驱动纳入了标准的网络子系统框架之下。也就是说CAN和以太网驱动一样使用的是同一套底层基础设施。</p>
+<h1 id="CAN配置"><a href="#CAN配置" class="headerlink" title="CAN配置"></a>CAN配置</h1><ul>
+<li>在Networking support中打开CAN bus subsystem support</li>
+<li>目前启用了部分协议</li>
+<li>在设备驱动中使能CAST CAN控制器</li>
+</ul>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs TEXT">Networking support<br>    [*]CAN bus subsystem support<br>        [*]Raw CAN Protocol (raw access with CAN-ID filtering)<br>        [*]Broadcast Manager CAN Protocol (with content filtering)<br>        [*]CAN Gateway/Router (with netlink configuration)<br>        [*]ISO 15765-2:2016 CAN transport protocol<br>           CAN Device Drivers<br>                [*]Platform CAN drivers with Netlink support<br>                [M]CAST CAN-CTRL (Classical CAN only)<br></code></pre></td></tr></table></figure>
+
+<h1 id="驱动代码分析"><a href="#驱动代码分析" class="headerlink" title="驱动代码分析"></a>驱动代码分析</h1><h2 id="probe"><a href="#probe" class="headerlink" title="probe"></a>probe</h2><ul>
+<li>基本的标准结构<ol>
+<li>寄存器映射</li>
+<li>分配并初始化 CAN 网络设备</li>
+<li>初始化 CAN 核心层参数<ul>
+<li>提供位定时能力：priv-&gt;can.bittiming_const（可能有data_bittiming_const），内核计算比特率的基础</li>
+<li>实现必要回调：设置 priv-&gt;can.do_set_mode 回调，这是支持总线错误恢复（Bus-Off restart）所必需的</li>
+<li>声明时钟频率：priv-&gt;can.clock.freq，位定时计算依赖于时钟频率</li>
+<li>设置特性标志：根据硬件能力，设置 priv-&gt;can.ctrlmode_supported（如支持回环、CAN FD 等）和 ndev-&gt;flags |&#x3D; IFF_ECHO（启用本地回环）</li>
+</ul>
+</li>
+<li>硬件与驱动的深度初始化</li>
+<li>注册 CAN 设备</li>
+</ol>
+</li>
+<li>额外添加stb-slots的获取，用于alloc_candev时指定echo_skb_max的个数</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">static</span> <span class="hljs-type">int</span> <span class="hljs-title function_">cast_can_probe</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> platform_device *pdev)</span><br>&#123;<br>	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">net_device</span> *<span class="hljs-title">ndev</span>;</span><br>	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">cast_can_priv</span> *<span class="hljs-title">priv</span>;</span><br>	<span class="hljs-type">void</span> __iomem *base;<br>	u32 freq, stb_slots;<br>	<span class="hljs-type">int</span> ret;<br><br>	base = devm_platform_ioremap_resource(pdev, <span class="hljs-number">0</span>);     <span class="hljs-comment">// 获取reg地址</span><br>	<span class="hljs-keyword">if</span> (IS_ERR(base))<br>		<span class="hljs-keyword">return</span> PTR_ERR(base);<br><br>	ret = of_property_read_u32(pdev-&gt;dev.of_node, <span class="hljs-string">&quot;cast,stb-slots&quot;</span>,<br>				   &amp;stb_slots);                         <span class="hljs-comment">// 获取发送的插槽个数（能够缓存的can帧个数）</span><br>	<span class="hljs-keyword">if</span> (ret) &#123;<br>		dev_err(&amp;pdev-&gt;dev, <span class="hljs-string">&quot;missing cast,stb-slots property: %d\n&quot;</span>, ret);<br>		<span class="hljs-keyword">return</span> ret;<br>	&#125;<br>	<span class="hljs-keyword">if</span> (!stb_slots || stb_slots &gt; CAST_STB_MAX_SLOTS) &#123;<br>		dev_err(&amp;pdev-&gt;dev, <span class="hljs-string">&quot;invalid cast,stb-slots value %u\n&quot;</span>,<br>			stb_slots);<br>		<span class="hljs-keyword">return</span> -EINVAL;<br>	&#125;<br><br>	ndev = alloc_candev(<span class="hljs-keyword">sizeof</span>(*priv), stb_slots);      <span class="hljs-comment">//分配私有数据，can中间层数据，本地回环缓冲区，完成net_dev和can_priv的初始化</span><br>	<span class="hljs-keyword">if</span> (!ndev)<br>		<span class="hljs-keyword">return</span> -ENOMEM;<br><br>	priv = netdev_priv(ndev);<br>	priv-&gt;dev = &amp;pdev-&gt;dev;<br>	priv-&gt;reg_base = base;<br>	priv-&gt;stb_slots = stb_slots;<br>	spin_lock_init(&amp;priv-&gt;tx_lock);<br>	priv-&gt;can.bittiming_const = &amp;cast_can_bittiming_const;      <span class="hljs-comment">//内核计算波特率时的硬件边界</span><br>	priv-&gt;can.ctrlmode_supported = CAN_CTRLMODE_LOOPBACK;<br>	priv-&gt;can.do_set_mode = cast_can_do_set_mode;               <span class="hljs-comment">//主要同于总线错误后重启</span><br>	priv-&gt;can.state = CAN_STATE_STOPPED;<br><br>	<span class="hljs-comment">/* can_clk drives the bit timing; pclk is the optional APB clock. */</span><br>	priv-&gt;clk_core = devm_clk_get_optional(&amp;pdev-&gt;dev, <span class="hljs-string">&quot;can_clk&quot;</span>);<br>	<span class="hljs-keyword">if</span> (IS_ERR(priv-&gt;clk_core)) &#123;<br>		ret = PTR_ERR(priv-&gt;clk_core);<br>		<span class="hljs-keyword">goto</span> err_free;<br>	&#125;<br><br>	priv-&gt;clk_apb = devm_clk_get_optional(&amp;pdev-&gt;dev, <span class="hljs-string">&quot;pclk&quot;</span>);<br>	<span class="hljs-keyword">if</span> (IS_ERR(priv-&gt;clk_apb)) &#123;<br>		ret = PTR_ERR(priv-&gt;clk_apb);<br>		<span class="hljs-keyword">goto</span> err_free;<br>	&#125;<br><br>	<span class="hljs-keyword">if</span> (priv-&gt;clk_core) &#123;<br>		priv-&gt;can.clock.freq = clk_get_rate(priv-&gt;clk_core);<br>	&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!of_property_read_u32(pdev-&gt;dev.of_node,<br>					 <span class="hljs-string">&quot;clock-frequency&quot;</span>, &amp;freq)) &#123;<br>		priv-&gt;can.clock.freq = freq;<br>	&#125; <span class="hljs-keyword">else</span> &#123;<br>		dev_err(&amp;pdev-&gt;dev, <span class="hljs-string">&quot;no can_clk and no clock-frequency\n&quot;</span>);<br>		ret = -EINVAL;<br>		<span class="hljs-keyword">goto</span> err_free;<br>	&#125;<br><br>	<span class="hljs-keyword">if</span> (!priv-&gt;can.clock.freq) &#123;<br>		dev_err(&amp;pdev-&gt;dev, <span class="hljs-string">&quot;can_clk rate is zero\n&quot;</span>);<br>		ret = -EINVAL;<br>		<span class="hljs-keyword">goto</span> err_free;<br>	&#125;<br><br>	priv-&gt;resets = devm_reset_control_array_get_exclusive(&amp;pdev-&gt;dev);<br>	<span class="hljs-keyword">if</span> (IS_ERR(priv-&gt;resets)) &#123;<br>		ret = PTR_ERR(priv-&gt;resets);<br>		<span class="hljs-keyword">if</span> (ret == -ENOENT || ret == -ENODEV) &#123;<br>			priv-&gt;resets = <span class="hljs-literal">NULL</span>;<br>		&#125; <span class="hljs-keyword">else</span> &#123;<br>			<span class="hljs-keyword">goto</span> err_free;<br>		&#125;<br>	&#125;<br><br>	ndev-&gt;irq = platform_get_irq(pdev, <span class="hljs-number">0</span>);<br>	<span class="hljs-keyword">if</span> (ndev-&gt;irq &lt; <span class="hljs-number">0</span>) &#123;<br>		ret = ndev-&gt;irq;<br>		<span class="hljs-keyword">goto</span> err_free;<br>	&#125;<br><br>	ret = clk_prepare_enable(priv-&gt;clk_apb);<br>	<span class="hljs-keyword">if</span> (ret)<br>		<span class="hljs-keyword">goto</span> err_free;<br>	ret = clk_prepare_enable(priv-&gt;clk_core);<br>	<span class="hljs-keyword">if</span> (ret)<br>		<span class="hljs-keyword">goto</span> err_clk_apb;<br><br>	<span class="hljs-keyword">if</span> (priv-&gt;resets) &#123;<br>		ret = reset_control_deassert(priv-&gt;resets);<br>		<span class="hljs-keyword">if</span> (ret)<br>			<span class="hljs-keyword">goto</span> err_clk;<br>	&#125;<br><br>	<span class="hljs-comment">/* The device stays configured but clock-gated while the netdev is down. */</span><br>	clk_disable_unprepare(priv-&gt;clk_core);<br>	clk_disable_unprepare(priv-&gt;clk_apb);<br><br>	ndev-&gt;flags |= IFF_ECHO;<br>	ndev-&gt;netdev_ops = &amp;cast_can_netdev_ops;<br>	SET_NETDEV_DEV(ndev, &amp;pdev-&gt;dev);<br>	platform_set_drvdata(pdev, ndev);<br><br>	netif_napi_add(ndev, &amp;priv-&gt;napi, cast_can_rx_poll, <span class="hljs-number">16</span>);    <span class="hljs-comment">// 和以太网驱动中用法相同，用于减少中断开销；将中断变成轮询</span><br><br>	ret = register_candev(ndev);<br>	<span class="hljs-keyword">if</span> (ret) &#123;<br>		dev_err(&amp;pdev-&gt;dev, <span class="hljs-string">&quot;failed to register CAN device: %d\n&quot;</span>, ret);<br>		<span class="hljs-keyword">goto</span> err_napi;<br>	&#125;<br><br>	dev_info(&amp;pdev-&gt;dev, <span class="hljs-string">&quot;CAN 2.0B controller, irq %d, %u Hz\n&quot;</span>,<br>		 ndev-&gt;irq, priv-&gt;can.clock.freq);<br>	<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br><br>err_napi:<br>	netif_napi_del(&amp;priv-&gt;napi);<br>	<span class="hljs-keyword">if</span> (priv-&gt;resets)<br>		reset_control_assert(priv-&gt;resets);<br>	<span class="hljs-keyword">goto</span> err_free;<br>err_clk:<br>	clk_disable_unprepare(priv-&gt;clk_core);<br>err_clk_apb:<br>	clk_disable_unprepare(priv-&gt;clk_apb);<br>err_free:<br>	free_candev(ndev);<br>	<span class="hljs-keyword">return</span> ret;<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+<h2 id="open"><a href="#open" class="headerlink" title="open"></a>open</h2><ul>
+<li>时钟使能</li>
+<li>中断注册</li>
+<li>napi_enable</li>
+<li>chip start：开启收发等的中断</li>
+<li>netif_start_queue：启动网络的发送队列（内核发数据包的几个函数netif_start_queue，netif_wake_queue，netif_stop_queue，netif_queue_stopped）</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">static</span> <span class="hljs-type">int</span> <span class="hljs-title function_">cast_can_open</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> net_device *ndev)</span><br>&#123;<br>	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">cast_can_priv</span> *<span class="hljs-title">priv</span> =</span> netdev_priv(ndev);<br>	<span class="hljs-type">int</span> ret;<br><br>	ret = clk_prepare_enable(priv-&gt;clk_apb);    <span class="hljs-comment">//时钟使能</span><br>	<span class="hljs-keyword">if</span> (ret)<br>		<span class="hljs-keyword">return</span> ret;<br>	ret = clk_prepare_enable(priv-&gt;clk_core);<br>	<span class="hljs-keyword">if</span> (ret)<br>		<span class="hljs-keyword">goto</span> err_apb;<br><br>	ret = open_candev(ndev);<br>	<span class="hljs-keyword">if</span> (ret)<br>		<span class="hljs-keyword">goto</span> err_clk;<br><br>	ret = request_irq(ndev-&gt;irq, cast_can_irq, IRQF_SHARED, ndev-&gt;name,<br>			  ndev);    <span class="hljs-comment">//注册中断</span><br>	<span class="hljs-keyword">if</span> (ret) &#123;<br>		netdev_err(ndev, <span class="hljs-string">&quot;failed to request irq %d: %d\n&quot;</span>,<br>			   ndev-&gt;irq, ret);<br>		<span class="hljs-keyword">goto</span> err_candev;<br>	&#125;<br><br>	priv-&gt;tx_head = <span class="hljs-number">0</span>;<br>	priv-&gt;tx_tail = <span class="hljs-number">0</span>;<br><br>	<span class="hljs-comment">/*</span><br><span class="hljs-comment">	 * Enable NAPI before the controller starts raising interrupts,</span><br><span class="hljs-comment">	 * otherwise a frame received in between could be lost (the flag is</span><br><span class="hljs-comment">	 * cleared but napi_schedule() is a no-op while NAPI is disabled).</span><br><span class="hljs-comment">	 */</span><br>	napi_enable(&amp;priv-&gt;napi);   <span class="hljs-comment">//先使能NAPI，再使能硬件中断</span><br><br>	ret = cast_can_chip_start(ndev);    <span class="hljs-comment">//模式配置，中断使能等</span><br>	<span class="hljs-keyword">if</span> (ret) &#123;<br>		netdev_err(ndev, <span class="hljs-string">&quot;failed to start controller: %d\n&quot;</span>, ret);<br>		cast_can_enter_reset(priv);<br>		napi_disable(&amp;priv-&gt;napi);<br>		<span class="hljs-keyword">goto</span> err_irq;<br>	&#125;<br><br>	netif_start_queue(ndev);    <span class="hljs-comment">//初始化，使能发送路径</span><br>	<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br><br>err_irq:<br>	free_irq(ndev-&gt;irq, ndev);<br>err_candev:<br>	close_candev(ndev);<br>err_clk:<br>	clk_disable_unprepare(priv-&gt;clk_core);<br>err_apb:<br>	clk_disable_unprepare(priv-&gt;clk_apb);<br>	<span class="hljs-keyword">return</span> ret;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="ndo-start-xmit"><a href="#ndo-start-xmit" class="headerlink" title="ndo_start_xmit"></a>ndo_start_xmit</h2><ul>
+<li>由网络协议栈调用，实现真正的数据发送</li>
+<li>解析skb中的can帧</li>
+<li>将can帧填入到控制器的特定寄存器</li>
+<li>根据软件队列剩余空间进行反压</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">static</span> <span class="hljs-type">netdev_tx_t</span> <span class="hljs-title function_">cast_can_start_xmit</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> sk_buff *skb,</span><br><span class="hljs-params">				       <span class="hljs-keyword">struct</span> net_device *ndev)</span><br>&#123;<br>	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">cast_can_priv</span> *<span class="hljs-title">priv</span> =</span> netdev_priv(ndev);<br>	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">can_frame</span> *<span class="hljs-title">cf</span> =</span> (<span class="hljs-keyword">struct</span> can_frame *)skb-&gt;data;<br>	<span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> flags;<br>	<span class="hljs-type">unsigned</span> <span class="hljs-type">int</span> idx;<br>	u32 id;<br>	u8 ctl;<br><br>	<span class="hljs-keyword">if</span> (can_dropped_invalid_skb(ndev, skb))     <span class="hljs-comment">//丢弃非法帧</span><br>		<span class="hljs-keyword">return</span> NETDEV_TX_OK;<br><br>	spin_lock_irqsave(&amp;priv-&gt;tx_lock, flags);<br>    <span class="hljs-comment">//检查是否有slots，当slots不足时，返回忙，并停止queue继续发送</span><br>	<span class="hljs-keyword">if</span> (unlikely(priv-&gt;tx_head - priv-&gt;tx_tail &gt;= priv-&gt;stb_slots)) &#123;<br>		spin_unlock_irqrestore(&amp;priv-&gt;tx_lock, flags);<br>		netif_stop_queue(ndev);<br>		<span class="hljs-keyword">return</span> NETDEV_TX_BUSY;<br>	&#125;<br>    <span class="hljs-comment">// 获取skb占用的位置</span><br>	idx = priv-&gt;tx_head % priv-&gt;stb_slots;<br><br>	ctl = cf-&gt;can_dlc &amp; CCAN_CTL_DLC_MASK;<br>	<span class="hljs-keyword">if</span> (cf-&gt;can_id &amp; CAN_EFF_FLAG)<br>		ctl |= CCAN_CTL_IDE;<br>	<span class="hljs-keyword">if</span> (cf-&gt;can_id &amp; CAN_RTR_FLAG)<br>		ctl |= CCAN_CTL_RTR;<br><br>	id = cf-&gt;can_id &amp; ((cf-&gt;can_id &amp; CAN_EFF_FLAG) ?<br>			   CAN_EFF_MASK : CAN_SFF_MASK);<br><br>	<span class="hljs-comment">/*</span><br><span class="hljs-comment">	 * Select the STB and keep TBSEL set until TSNEXT has been written.</span><br><span class="hljs-comment">	 * The core points the TBUF window at the next free STB slot.</span><br><span class="hljs-comment">	 */</span><br>	cast_can_write_ctl(priv, priv-&gt;cfg, CCAN_TCMD_TBSEL, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);     <span class="hljs-comment">//使用stb slots，而非ptb</span><br><br>	cast_can_write32(priv, CCAN_TBUF_ID, id);<br>	<span class="hljs-keyword">if</span> (!(ctl &amp; CCAN_CTL_RTR))<br>		cast_can_write_payload(priv, cf-&gt;data, cf-&gt;can_dlc);        <span class="hljs-comment">//写数据部分</span><br>	cast_can_write32(priv, CCAN_TBUF_CTL, ctl);                     <span class="hljs-comment">//写控制部分</span><br><br>	can_put_echo_skb(skb, ndev, idx);<br><br>	<span class="hljs-comment">/*</span><br><span class="hljs-comment">	 * Mark this slot as filled and request transmission of all frames in</span><br><span class="hljs-comment">	 * the STB.  TSALL is written on every fill: if the previous batch has</span><br><span class="hljs-comment">	 * just become empty (and TSALL was auto-cleared) this starts a new</span><br><span class="hljs-comment">	 * batch; if TSALL is still active the redundant set is harmless and</span><br><span class="hljs-comment">	 * the new frame joins the running batch.</span><br><span class="hljs-comment">	 */</span><br>	cast_can_write_ctl(priv, priv-&gt;cfg,<br>			   CCAN_TCMD_TBSEL | CCAN_TCMD_TSALL,<br>			   CCAN_TCTRL_TSNEXT, <span class="hljs-number">0</span>);       <span class="hljs-comment">//选择stb slots，发送所有slots，硬件选中下一个可用slot</span><br><br>	priv-&gt;tx_head++;<br><br>	<span class="hljs-keyword">if</span> (priv-&gt;tx_head - priv-&gt;tx_tail &gt;= priv-&gt;stb_slots)<br>		netif_stop_queue(ndev);<br><br>	spin_unlock_irqrestore(&amp;priv-&gt;tx_lock, flags);<br><br>	<span class="hljs-keyword">return</span> NETDEV_TX_OK;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="TX-DONE"><a href="#TX-DONE" class="headerlink" title="TX DONE"></a>TX DONE</h2><ul>
+<li>由中断调用，当所有slots中的数据都发送完毕，触发</li>
+<li>批量回收在途帧</li>
+<li>唤醒队列</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">static</span> <span class="hljs-type">void</span> <span class="hljs-title function_">cast_can_tx_done</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> net_device *ndev)</span><br>&#123;<br>	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">cast_can_priv</span> *<span class="hljs-title">priv</span> =</span> netdev_priv(ndev);<br>	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">net_device_stats</span> *<span class="hljs-title">stats</span> =</span> &amp;ndev-&gt;stats;<br>	<span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> flags;<br>	<span class="hljs-type">unsigned</span> <span class="hljs-type">int</span> idx, len;<br>	<span class="hljs-type">bool</span> wake = <span class="hljs-literal">false</span>;<br>	u8 tsstat;<br><br>	spin_lock_irqsave(&amp;priv-&gt;tx_lock, flags);<br><br>	tsstat = cast_can_read8(priv, CCAN_TCTRL) &amp; CCAN_TCTRL_TSSTAT_MASK;<br>	<span class="hljs-keyword">if</span> (tsstat)<br>		<span class="hljs-keyword">goto</span> out;<br><br>	wake = priv-&gt;tx_tail != priv-&gt;tx_head;<br><br>    <span class="hljs-comment">// 状态修改，计数</span><br>	<span class="hljs-keyword">while</span> (priv-&gt;tx_tail != priv-&gt;tx_head) &#123;<br>		idx = priv-&gt;tx_tail % priv-&gt;stb_slots;<br>		len = can_get_echo_skb(ndev, idx);<br>		stats-&gt;tx_bytes += len;<br>		stats-&gt;tx_packets++;<br>		priv-&gt;tx_tail++;<br>	&#125;<br><br>out:<br>	spin_unlock_irqrestore(&amp;priv-&gt;tx_lock, flags);<br><br>	<span class="hljs-keyword">if</span> (wake)<br>		netif_wake_queue(ndev);     <span class="hljs-comment">//唤醒发送队列</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="RX"><a href="#RX" class="headerlink" title="RX"></a>RX</h2><ul>
+<li>依赖于NAPI进行</li>
+<li>轮询进行数据接收</li>
+<li>cast_can_rx_one中进行实际的buffer读取，组帧</li>
+<li>接收后统一将数据sbk向上层传递，和以太网驱动类似</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">static</span> <span class="hljs-type">int</span> <span class="hljs-title function_">cast_can_rx_poll</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> napi_struct *napi, <span class="hljs-type">int</span> quota)</span><br>&#123;<br>	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">net_device</span> *<span class="hljs-title">ndev</span> =</span> napi-&gt;dev;<br>	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">cast_can_priv</span> *<span class="hljs-title">priv</span> =</span> netdev_priv(ndev);<br>	<span class="hljs-type">int</span> work = <span class="hljs-number">0</span>;<br><br>	<span class="hljs-keyword">while</span> (work &lt; quota) &#123;<br>		<span class="hljs-keyword">if</span> (!(cast_can_read8(priv, CCAN_RCTRL) &amp;<br>		      CCAN_RCTRL_RSTAT_MASK))<br>			<span class="hljs-keyword">break</span>;  <span class="hljs-comment">//接收buff空，退出循环</span><br>		work += cast_can_rx_one(ndev);<br>	&#125;<br><br>	<span class="hljs-keyword">if</span> (work &lt; quota) &#123;<br>		napi_complete_done(napi, work);<br>		priv-&gt;rtie |= CCAN_RTIE_RIE;<br>		cast_can_write_irq(priv, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);<br><br>		<span class="hljs-comment">/* Close the race between the empty check and RIE enable. */</span><br>		<span class="hljs-keyword">if</span> ((cast_can_read8(priv, CCAN_RCTRL) &amp;<br>		     CCAN_RCTRL_RSTAT_MASK) &amp;&amp;<br>		    napi_schedule_prep(napi)) &#123;<br>			priv-&gt;rtie &amp;= ~CCAN_RTIE_RIE;<br>			cast_can_write_irq(priv, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);<br>			__napi_schedule(napi);<br>		&#125;<br>	&#125;<br><br>	<span class="hljs-keyword">return</span> work;<br>&#125;<br><br><span class="hljs-type">static</span> <span class="hljs-type">int</span> <span class="hljs-title function_">cast_can_rx_one</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> net_device *ndev)</span><br>&#123;<br>	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">cast_can_priv</span> *<span class="hljs-title">priv</span> =</span> netdev_priv(ndev);<br>	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">net_device_stats</span> *<span class="hljs-title">stats</span> =</span> &amp;ndev-&gt;stats;<br>	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">sk_buff</span> *<span class="hljs-title">skb</span>;</span><br>	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">can_frame</span> *<span class="hljs-title">cf</span>;</span><br>	u32 id;<br>	u8 ctl, len;<br><br>	ctl = cast_can_read8(priv, CCAN_RBUF_CTL);<br>	id = cast_can_read32(priv, CCAN_RBUF_ID);<br>	len = cast_can_dlc2len(ctl &amp; CCAN_CTL_DLC_MASK);<br><br>	<span class="hljs-comment">/*</span><br><span class="hljs-comment">	 * Classical CAN only.  A CC-only core never sets FDF, but if the</span><br><span class="hljs-comment">	 * core was synthesised with CAN FD support, ignore FD frames rather</span><br><span class="hljs-comment">	 * than misinterpreting them as Classical CAN.</span><br><span class="hljs-comment">	 */</span><br>	<span class="hljs-keyword">if</span> (ctl &amp; CCAN_CTL_FDF) &#123;<br>		stats-&gt;rx_dropped++;<br>		cast_can_release_rx(priv);<br>		<span class="hljs-keyword">return</span> <span class="hljs-number">1</span>;<br>	&#125;<br><br>	skb = alloc_can_skb(ndev, &amp;cf);<br>	<span class="hljs-keyword">if</span> (!skb) &#123;<br>		stats-&gt;rx_dropped++;<br>		<span class="hljs-comment">/* Release the slot so the FIFO does not stall. */</span><br>		cast_can_release_rx(priv);<br>		<span class="hljs-keyword">return</span> <span class="hljs-number">1</span>;<br>	&#125;<br><br>	cf-&gt;can_id = id &amp; ((ctl &amp; CCAN_CTL_IDE) ? CAN_EFF_MASK : CAN_SFF_MASK);<br>	<span class="hljs-keyword">if</span> (ctl &amp; CCAN_CTL_IDE)<br>		cf-&gt;can_id |= CAN_EFF_FLAG;<br>	<span class="hljs-keyword">if</span> (ctl &amp; CCAN_CTL_RTR)<br>		cf-&gt;can_id |= CAN_RTR_FLAG;<br><br>	cf-&gt;can_dlc = len;<br>	<span class="hljs-keyword">if</span> (!(ctl &amp; CCAN_CTL_RTR))<br>		cast_can_read_payload(priv, cf-&gt;data, len);<br><br>	<span class="hljs-comment">/* Reading RREL moves the RBUF window to the next oldest slot. */</span><br>	cast_can_release_rx(priv);<br><br>	stats-&gt;rx_bytes += len;<br>	stats-&gt;rx_packets++;<br>	netif_receive_skb(skb);<br><br>	<span class="hljs-keyword">return</span> <span class="hljs-number">1</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h1 id="ip-link-set"><a href="#ip-link-set" class="headerlink" title="ip link set"></a>ip link set</h1><ul>
+<li>使用ip link set可以配置can的波特率，以及开关can</li>
+<li>ip link set依赖于buildroot中的iproute2</li>
+</ul>
+<figure class="highlight lasso"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs lasso">ip <span class="hljs-keyword">link</span> <span class="hljs-built_in">set</span> can0 down<br>ip <span class="hljs-keyword">link</span> <span class="hljs-built_in">set</span> can0 <span class="hljs-keyword">type</span> can bitrate <span class="hljs-number">500000</span> loopback <span class="hljs-keyword">on</span>    <span class="hljs-comment">//自回环开启</span><br>ip <span class="hljs-keyword">link</span> <span class="hljs-built_in">set</span> can0 up<br></code></pre></td></tr></table></figure>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/CAN/" class="print-no-link">#CAN</a>
+      
+        <a href="/tags/Socket/" class="print-no-link">#Socket</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>SocketCAN</div>
+      <div>https://blog.baimochun.xyz/2026/10/20/SocketCAN/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>baimochun</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年10月20日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/10/12/%E4%B8%B2%E5%8F%A3%E4%B8%8Edma%E6%94%B6%E5%8F%91%E6%95%B0%E6%8D%AE/" title="串口与dma收发数据">
+                        <span class="hidden-mobile">串口与dma收发数据</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
