@@ -35,7 +35,7 @@
 <meta property="og:image" content="https://blog.baimochun.xyz/2026/09/03/Eclipse-Embedded-C-C/main_cfg.JPG">
 <meta property="og:image" content="https://blog.baimochun.xyz/2026/09/03/Eclipse-Embedded-C-C/Debugger.JPG">
 <meta property="article:published_time" content="2026-09-03T06:52:08.000Z">
-<meta property="article:modified_time" content="2026-10-29T08:35:01.894Z">
+<meta property="article:modified_time" content="2026-10-29T08:45:43.749Z">
 <meta property="article:author" content="baimochun">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://blog.baimochun.xyz/2026/09/03/Eclipse-Embedded-C-C/help.JPG">
@@ -464,8 +464,9 @@
 <li>指定cpu类型</li>
 <li>指定CoreBaseAddr</li>
 <li>指定CTICoreBaseAddr</li>
+<li>建立文件A53.JLinkScript，放入以下内容即可</li>
 </ul>
-<figure class="highlight scss"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs scss">int <span class="hljs-built_in">ConfigTargetSettings</span>(void) &#123;<br>  <br>  <span class="hljs-built_in">JLINK_ExecCommand</span>(&quot;JLINK_CPU = CORTEX_A53;&quot;);<br>  <span class="hljs-built_in">JLINK_ExecCommand</span>(&quot;CORESIGHT_SetCoreBaseAddr = <span class="hljs-number">0</span>x80010000&quot;);<br>  <span class="hljs-built_in">JLINK_ExecCommand</span>(&quot;CORESIGHT_SetCTICoreBaseAddr = <span class="hljs-number">0</span>x80020000&quot;);<br><br>  return <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs text">int ConfigTargetSettings(void) &#123;<br>  <br>  JLINK_ExecCommand(&quot;JLINK_CPU = CORTEX_A53;&quot;);<br>  JLINK_ExecCommand(&quot;CORESIGHT_SetCoreBaseAddr = 0x80010000&quot;);<br>  JLINK_ExecCommand(&quot;CORESIGHT_SetCTICoreBaseAddr = 0x80020000&quot;);<br><br>  return 0;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 
 
