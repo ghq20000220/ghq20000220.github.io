@@ -4,6 +4,27 @@
   
   
   <entry>
+    <title>linux irqbalance</title>
+    <link href="/2026/11/02/linux-irqbalance/"/>
+    <url>/2026/11/02/linux-irqbalance/</url>
+    
+    <content type="html"><![CDATA[<p><a href="https://blog.baimochun.xyz/2026/10/10/pl011-oe%E6%8E%92%E6%9F%A5/">pl011-oe排查</a>的后续引申</p><h1 id="功能"><a href="#功能" class="headerlink" title="功能"></a>功能</h1><ul><li>字面直译，irq的平衡</li><li>用于将硬件中断分配到不同的cpu核心，优化多核系统的并行处理能力</li></ul><h1 id="行为"><a href="#行为" class="headerlink" title="行为"></a>行为</h1><ul><li>后台监控中断分布，动态调整分配策略</li></ul><h1 id="适用场景"><a href="#适用场景" class="headerlink" title="适用场景"></a>适用场景</h1><ul><li>服务器、高性能计算或多核密集型应用环境</li></ul><h1 id="测试记录"><a href="#测试记录" class="headerlink" title="测试记录"></a>测试记录</h1><ul><li>在文件系统中开启irqbalace</li><li>内核启动后自动运行irqbalance</li><li>使用debug console进行操作输出 &#x2F;proc&#x2F;interrupts信息</li><li>看到中断还是仅由core0处理</li></ul><h1 id="后续计划"><a href="#后续计划" class="headerlink" title="后续计划"></a>后续计划</h1><ul><li>利用串口压力测试，多串口同时收发，再看irqbalace是否进行了中断平衡</li></ul>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>linux</tag>
+      
+      <tag>irqbalance</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>SocketCAN</title>
     <link href="/2026/10/20/SocketCAN/"/>
     <url>/2026/10/20/SocketCAN/</url>
