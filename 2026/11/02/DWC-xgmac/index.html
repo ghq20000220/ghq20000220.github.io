@@ -1,0 +1,861 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+    <link rel="canonical" href="https://blog.baimochun.xyz/2026/11/02/DWC-xgmac/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="baimochun">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="梳理DW XGAMC相关资料，整理汇总如下 资料整理结构  控制器部分是MAC PCS-R：PCS层，数据打包，将MAC的原始数据转为特定格式（64B&#x2F;66B）编码，加扰等 SerDes（PHY）：PMA层，是模拟电路，负责信号的串并转换以及电气驱动 没有PMD：当外接光口时，光口作为PMD层  代码分析XGMAC_PCS_Config XGMAC_PCS_Config中，等待上电后初始">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DWC xgmac">
+<meta property="og:url" content="https://blog.baimochun.xyz/2026/11/02/DWC-xgmac/index.html">
+<meta property="og:site_name" content="baimochun">
+<meta property="og:description" content="梳理DW XGAMC相关资料，整理汇总如下 资料整理结构  控制器部分是MAC PCS-R：PCS层，数据打包，将MAC的原始数据转为特定格式（64B&#x2F;66B）编码，加扰等 SerDes（PHY）：PMA层，是模拟电路，负责信号的串并转换以及电气驱动 没有PMD：当外接光口时，光口作为PMD层  代码分析XGMAC_PCS_Config XGMAC_PCS_Config中，等待上电后初始">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.baimochun.xyz/2026/11/02/DWC-xgmac/xgmac%E7%BB%93%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE.JPG">
+<meta property="article:published_time" content="2026-11-02T06:43:52.000Z">
+<meta property="article:modified_time" content="2026-11-05T07:33:02.858Z">
+<meta property="article:author" content="baimochun">
+<meta property="article:tag" content="xgmac">
+<meta property="article:tag" content="以太网">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://blog.baimochun.xyz/2026/11/02/DWC-xgmac/xgmac%E7%BB%93%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE.JPG">
+  
+  
+  
+  <title>DWC xgmac - baimochun</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"blog.baimochun.xyz","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="DWC xgmac"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-11-02 14:43" pubdate>
+          2026年11月2日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          4.5k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          38 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">DWC xgmac</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>梳理DW XGAMC相关资料，整理汇总如下</p>
+<h1 id="资料整理"><a href="#资料整理" class="headerlink" title="资料整理"></a>资料整理</h1><h2 id="结构"><a href="#结构" class="headerlink" title="结构"></a>结构</h2><p><img src="/2026/11/02/DWC-xgmac/xgmac%E7%BB%93%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE.JPG" srcset="/img/loading.gif" lazyload alt="xgmac结构"></p>
+<ul>
+<li>控制器部分是MAC</li>
+<li>PCS-R：PCS层，数据打包，将MAC的原始数据转为特定格式（64B&#x2F;66B）编码，加扰等</li>
+<li>SerDes（PHY）：PMA层，是模拟电路，负责信号的串并转换以及电气驱动</li>
+<li>没有PMD：当外接光口时，光口作为PMD层</li>
+</ul>
+<h2 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h2><h3 id="XGMAC-PCS-Config"><a href="#XGMAC-PCS-Config" class="headerlink" title="XGMAC_PCS_Config"></a>XGMAC_PCS_Config</h3><ul>
+<li>XGMAC_PCS_Config中，等待上电后初始化了一些serdes相关的内容，不理解参数来源作用</li>
+<li>配置了phy回环</li>
+<li>对PCS寄存器的访问，依赖于代理寄存器</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">void</span> <span class="hljs-title function_">XGMAC_PCS_Config</span><span class="hljs-params">( <span class="hljs-type">uint64_t</span> GMAC_num)</span><br>&#123;<br>	<span class="hljs-keyword">volatile</span> <span class="hljs-type">uint64_t</span> X8, X15, X9, X1;<br>xgmac_loop_pow:<br>	XGMAC_PCS_Read(VR_PMA_DIG_STS, &amp;X15, GMAC_num);	<span class="hljs-comment">//等power on</span><br>	X8 = <span class="hljs-number">0x010</span>;<br>	X9 = X15 &amp; X8;<br>	X1 = (X9 == X8) ? <span class="hljs-number">1</span> : <span class="hljs-number">0</span>;<br>	<span class="hljs-keyword">if</span>((!X1) != <span class="hljs-number">0</span>)<br>		<span class="hljs-keyword">goto</span> xgmac_loop_pow;<br>	cpu_delay(<span class="hljs-number">5</span>);<br>	XGMAC_PCS_Write(VR_XS_PMA_MP_25G_MPLLA_CTRL2, <span class="hljs-number">0x908</span>, GMAC_num);	<span class="hljs-comment">//serdes 速率配置10.3125G</span><br>	XGMAC_PCS_Write(VR_XS_PMA_MP_25G_MPLLA_BW_LO_CTRL, <span class="hljs-number">0x18</span>, GMAC_num); <span class="hljs-comment">//环路带宽；不理解</span><br>	XGMAC_PCS_Write(VR_XS_PMA_MP_25G_MPLLA_BW_HI_CTRL, <span class="hljs-number">0x18</span>, GMAC_num);<br>	XGMAC_PCS_Write(VR_XS_PMA_MP_16G_25G_RX_EQ_CTRL0, <span class="hljs-number">0x5551</span>, GMAC_num);<br>	XGMAC_PCS_Write(VR_XS_PMA_MP_16G_25G_RX_EQ_CTRL0, <span class="hljs-number">0x5551</span>, GMAC_num);<br>	XGMAC_PCS_Write(VR_XS_PMA_MP_12G_16G_25G_DFE_TAP_CTRL0, <span class="hljs-number">0xf</span>, GMAC_num);<br>	XGMAC_PCS_Write(VR_XS_PMA_MP_16G_25G_RX_IQ_CTRL0, <span class="hljs-number">0x600</span>, GMAC_num);<br>	XGMAC_PCS_Write(VR_XS_PMA_MP_25G_RX_VCO_CFG0, <span class="hljs-number">0x0</span>, GMAC_num);<br>	XGMAC_PCS_Write(VR_XS_PMA_MP_25G_RX_LF_TRSHLD, <span class="hljs-number">0x4</span>, GMAC_num);<br>	XGMAC_PCS_Write(SR_PMA_CTRL1, <span class="hljs-number">0x1</span>, GMAC_num);	<span class="hljs-comment">//phy loop back</span><br>	XGMAC_PCS_Write(SR_AN_CTRL, <span class="hljs-number">0x2000</span>, GMAC_num);  <span class="hljs-comment">//Extended next page is enabled</span><br>&#125;<br><br><span class="hljs-type">void</span> <span class="hljs-title function_">XGMAC_PCS_Read</span><span class="hljs-params">( <span class="hljs-type">uint64_t</span> Addr, <span class="hljs-keyword">volatile</span> <span class="hljs-type">uint64_t</span> *p_data, <span class="hljs-type">uint64_t</span> GMAC_num)</span><br>&#123;<br>	<span class="hljs-keyword">volatile</span> <span class="hljs-type">uint64_t</span> Y4, X8, Y5;<br>	<span class="hljs-keyword">volatile</span> <span class="hljs-type">uint64_t</span> X5;<br>	<span class="hljs-keyword">volatile</span> <span class="hljs-type">uint32_t</span> Y6;<br>	XGMAC_PCS_BaseAddr_Write(Addr, GMAC_num);<br>	Y6 = Addr;<br>	Y6 = Y6 &lt;&lt; <span class="hljs-number">22</span>;<br>	Y4 = Y6 &gt;&gt; <span class="hljs-number">22</span>;<br>	X8 = (GMAC_num*<span class="hljs-number">0x40000</span>+Xgmac_baseaddr+<span class="hljs-number">0x83fc</span>)/<span class="hljs-number">0x8000</span>*<span class="hljs-number">0x8000</span>;<br>	Y5 = Y4 + X8;<br>	X5 = Y5;<br>	*p_data = READ32(X5);<br>&#125;<br><br><span class="hljs-type">void</span> <span class="hljs-title function_">XGMAC_PCS_BaseAddr_Write</span><span class="hljs-params">( <span class="hljs-type">uint64_t</span> bAddr, <span class="hljs-type">uint64_t</span> bGMAC_num)</span><br>&#123;<br>	<span class="hljs-keyword">volatile</span> <span class="hljs-type">uint64_t</span> X5, Y4;<br>	X5 = bGMAC_num*<span class="hljs-number">0x40000</span>+Xgmac_baseaddr+<span class="hljs-number">0x83fc</span>;<br>	Y4 = bAddr/<span class="hljs-number">0x400</span>;<br>	WRITE32(X5, Y4);<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+<h3 id="XGMAC-WAIT-LINK"><a href="#XGMAC-WAIT-LINK" class="headerlink" title="XGMAC_WAIT_LINK"></a>XGMAC_WAIT_LINK</h3><ul>
+<li>等待链接</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">void</span> <span class="hljs-title function_">XGMAC_WAIT_LINK</span><span class="hljs-params">( <span class="hljs-type">uint64_t</span> GMAC_num)</span><br>&#123;<br>	<span class="hljs-keyword">volatile</span> <span class="hljs-type">uint64_t</span> X8, X15, X9, X1;<br>xgmac_loop_rx:<br>	XGMAC_PCS_Read(VR_XS_PMA_MP_12G_16G_25G_RX_STS, &amp;X15, GMAC_num);	<span class="hljs-comment">//检查是否有光、电信号</span><br>	X8 = <span class="hljs-number">0x10</span>;<br>	X9 = X15 &amp; X8;<br>	X1 = (X9 == X8) ? <span class="hljs-number">1</span> : <span class="hljs-number">0</span>;<br>	<span class="hljs-keyword">if</span>((!X1) != <span class="hljs-number">0</span>)<br>		<span class="hljs-keyword">goto</span> xgmac_loop_rx;<br>	cpu_delay(<span class="hljs-number">5</span>);<br>xgmac_loop_link:<br>	XGMAC_PCS_Read(SR_XS_PCS_STS1, &amp;X15, GMAC_num);	<span class="hljs-comment">//等链接建立</span><br>	X8 = <span class="hljs-number">0x04</span>;<br>	X9 = X15 &amp; X8;<br>	X1 = (X9 == X8) ? <span class="hljs-number">1</span> : <span class="hljs-number">0</span>;<br>	<span class="hljs-keyword">if</span>((!X1) != <span class="hljs-number">0</span>)<br>		<span class="hljs-keyword">goto</span> xgmac_loop_link;<br>	cpu_delay(<span class="hljs-number">5</span>);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="XGMAC-Config"><a href="#XGMAC-Config" class="headerlink" title="XGMAC_Config"></a>XGMAC_Config</h3><ul>
+<li>MAC的相关配置</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">void</span> <span class="hljs-title function_">XGMAC_Config</span><span class="hljs-params">( <span class="hljs-type">uint64_t</span> GMAC_num)</span><br>&#123;<br>	<span class="hljs-comment">/* [16]:jabber disable.允许最大16383B packet；[22:20] Source Address Insertion or Replacement Control,描述符控制mac地址*/</span><br>	XGMAC_MAC_Write(MAC_Tx_Configuration, <span class="hljs-number">0x00110000</span>, GMAC_num);<br><br>	<span class="hljs-comment">/* [1:0]:接收队列0，配置为通用模式*/</span><br>	XGMAC_MAC_Write(MAC_RxQ_Ctrl0, <span class="hljs-number">0x2</span>, GMAC_num);<br><br>	<span class="hljs-comment">/*[1]: 存储转发模式，MAC等整个以太网包进入队列后才进行发送。不是fifo有一定的数据量就发送</span><br><span class="hljs-comment">	 * [3:2]: 发送queue使能</span><br><span class="hljs-comment">	 * [x:16]:发送队列大小，全给queue0</span><br><span class="hljs-comment">	 * */</span><br>	XGMAC_MAC_Write(MTL_TxQ0_Operation_Mode, <span class="hljs-number">0x1f000a</span>, GMAC_num);<br><br>	<span class="hljs-comment">/* [1:0]:接收queue阈值64B</span><br><span class="hljs-comment">	 * [3]:Forward Undersized Good Packets.转发尺寸不足但有效的数据包</span><br><span class="hljs-comment">	 * 其它相关的收数配置</span><br><span class="hljs-comment">	 * */</span><br>	XGMAC_MAC_Write(MTL_RxQ0_Operation_Mode, <span class="hljs-number">0x1f0038</span>, GMAC_num);<br><br>	<span class="hljs-comment">/* normal 中断使能*/</span><br>	XGMAC_MAC_Write(DMA_CH0_Interrupt_Enable, <span class="hljs-number">0xc0c5</span>, GMAC_num);<br>	<span class="hljs-comment">/* TX描述符请求优先*/</span><br>	XGMAC_MAC_Write(DMA_Mode, <span class="hljs-number">0x10</span>, GMAC_num);<br>	<span class="hljs-comment">/* */</span><br>	XGMAC_MAC_Write(MAC_Packet_Filter, <span class="hljs-number">0x80000015</span>, GMAC_num);<br>	XGMAC_MAC_Write(DMA_CH0_Rx_Control, <span class="hljs-number">0x107ff0</span>, GMAC_num);<br>	XGMAC_MAC_Write(MAC_Rx_Configuration, <span class="hljs-number">0x988</span>, GMAC_num);<br>	XGMAC_MAC_Write(DMA_CH0_Tx_Control, <span class="hljs-number">0x100010</span>, GMAC_num);<br>&#125;<br></code></pre></td></tr></table></figure>
+<h3 id="XGMAC-CONFIG-1KFRAME"><a href="#XGMAC-CONFIG-1KFRAME" class="headerlink" title="XGMAC_CONFIG_1KFRAME"></a>XGMAC_CONFIG_1KFRAME</h3><ul>
+<li>以1KB为包大小，初始化描述符</li>
+<li>配置描述符地址到dma ch</li>
+<li>配置描述符最大长度</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">void</span> <span class="hljs-title function_">XGMAC_CONFIG_1KFRAME</span><span class="hljs-params">( <span class="hljs-type">uint64_t</span> NUM, <span class="hljs-type">uint64_t</span> TDESE_ADDR, <span class="hljs-type">uint64_t</span> RDESE_ADDR, <span class="hljs-type">uint64_t</span> SADDRH, <span class="hljs-type">uint64_t</span> SADDR, <span class="hljs-type">uint64_t</span> DADDRH, <span class="hljs-type">uint64_t</span> DADDR, <span class="hljs-type">uint64_t</span> LENS)</span><br>&#123;<br>	XGMAC_READ_1K(TDESE_ADDR, SADDRH, SADDR, LENS);<br>	flush_range_dcache(TDESE_ADDR, LENS);<br><br>	XGMAC_WRITE_1K(RDESE_ADDR, DADDRH, DADDR, LENS);<br>	flush_range_dcache(RDESE_ADDR, LENS);<br><br>	XGMAC_MAC_Write(DMA_SysBus_Mode, <span class="hljs-number">0x1f1f080a</span>, NUM);<br><br>	XGMAC_WRITE_1KDESCADDR(TDESE_ADDR, RDESE_ADDR, LENS, NUM);<br><br>	XGMAC_MAC_Write(DMA_CH0_Tx_Control2, <span class="hljs-number">0x3e7</span>, NUM);   <span class="hljs-comment">//配置描述符最大长度 个数</span><br>	XGMAC_MAC_Write(DMA_CH0_Rx_Control2, <span class="hljs-number">0x3e7</span>, NUM);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="XGMAC-RUN"><a href="#XGMAC-RUN" class="headerlink" title="XGMAC_RUN"></a>XGMAC_RUN</h3><ul>
+<li>mac启动，dma启动</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">void</span> <span class="hljs-title function_">XGMAC_RUN</span><span class="hljs-params">( <span class="hljs-type">uint64_t</span> GMAC_num)</span><br>&#123;<br>	XGMAC_MAC_Write_n(MAC_Tx_Configuration, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>, GMAC_num);<br>	XGMAC_MAC_Write_n(DMA_CH0_Rx_Control, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>, GMAC_num);<br>	XGMAC_MAC_Write_n(MAC_Rx_Configuration, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>, GMAC_num);<br>	XGMAC_MAC_Write_n(DMA_CH0_Tx_Control, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>, GMAC_num);<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+<h2 id="信息点"><a href="#信息点" class="headerlink" title="信息点"></a>信息点</h2><ul>
+<li>DMA<ul>
+<li>支持描述符64bit寻址</li>
+<li>DMA地址宽度48？</li>
+<li>描述符是环形的，不存在链式的描述符</li>
+<li>普通描述符长度是16B</li>
+</ul>
+</li>
+</ul>
+<h2 id="PCS访问"><a href="#PCS访问" class="headerlink" title="PCS访问"></a>PCS访问</h2><p>通过代理寄存器实现访问PCS寄存器；在文档xgmac寄存器访问.docx有相关说明。使用该方式的原因没有说明，推测为PCS占用地址空间较大</p>
+<ol>
+<li>访问PCS和PHY寄存器需要等VR_PMA_DIG_STS[4]为1</li>
+<li>PCS寄存器访问：依赖于代理寄存器<ul>
+<li>读访问：将高位地址写入0x83fc，从0x8000+地位地址读<ol>
+<li>往地址（基址+0x83fc）写（pcs偏移地址[31:10]）</li>
+<li>读地址（基址+0x8000+偏移地址[9:0]）</li>
+</ol>
+</li>
+<li>写访问：将高位地址写入0x83fc，写0x8000+地位地址<ol>
+<li>往地址（基址+0x83fc）写（pcs偏移地址[31:10]）</li>
+<li>写地址（基址+0x8000+偏移地址[9:0]）</li>
+</ol>
+</li>
+</ul>
+</li>
+<li>在XGMAC_PCS_Read中使用了该方法</li>
+</ol>
+<h2 id="PCS访问PHY寄存器（serdes寄存器）"><a href="#PCS访问PHY寄存器（serdes寄存器）" class="headerlink" title="PCS访问PHY寄存器（serdes寄存器）"></a>PCS访问PHY寄存器（serdes寄存器）</h2><p>- </p>
+<h2 id="MDIO访问PHY寄存器"><a href="#MDIO访问PHY寄存器" class="headerlink" title="MDIO访问PHY寄存器"></a>MDIO访问PHY寄存器</h2><p>- </p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E4%BB%A5%E5%A4%AA%E7%BD%91/" class="print-no-link">#以太网</a>
+      
+        <a href="/tags/xgmac/" class="print-no-link">#xgmac</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>DWC xgmac</div>
+      <div>https://blog.baimochun.xyz/2026/11/02/DWC-xgmac/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>baimochun</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年11月2日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/11/02/linux-irqbalance/" title="linux irqbalance">
+                        <span class="hidden-mobile">linux irqbalance</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

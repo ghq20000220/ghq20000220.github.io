@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
   <link rel="icon" href="/img/fluid.png">
   
-    <link rel="canonical" href="https://blog.baimochun.xyz/2026/08/12/DWC-xgmac/"/>
+    <link rel="canonical" href="https://blog.baimochun.xyz/tags/xgmac/"/>
   
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
@@ -21,35 +21,21 @@
   <meta name="author" content="baimochun">
   <meta name="keywords" content="">
   
-    <meta name="description" content="dw xgmac使用记录典型结构介绍 从典型结构图可以看出，xgmac接口部分由MAC、PCS和PMA组成  PMA层：利用SerDes技术实现，实现数据的串并转换 PCS层：实现编解码，扰码&#x2F;解扰。对MAC层的数据进行信道编码等 MAC层：由XGMAC-AXI，XGMAC-MTL，XGMAC-CORE组成  uboot mac初始化初始化做的事情，dma,mtl,macdma init">
-<meta property="og:type" content="article">
-<meta property="og:title" content="DWC xgmac">
-<meta property="og:url" content="https://blog.baimochun.xyz/2026/08/12/DWC-xgmac/index.html">
+    <meta property="og:type" content="website">
+<meta property="og:title" content="标签 - xgmac">
+<meta property="og:url" content="https://blog.baimochun.xyz/tags/xgmac/index.html">
 <meta property="og:site_name" content="baimochun">
-<meta property="og:description" content="dw xgmac使用记录典型结构介绍 从典型结构图可以看出，xgmac接口部分由MAC、PCS和PMA组成  PMA层：利用SerDes技术实现，实现数据的串并转换 PCS层：实现编解码，扰码&#x2F;解扰。对MAC层的数据进行信道编码等 MAC层：由XGMAC-AXI，XGMAC-MTL，XGMAC-CORE组成  uboot mac初始化初始化做的事情，dma,mtl,macdma init">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://blog.baimochun.xyz/2026/08/12/DWC-xgmac/xgmac%E7%BB%93%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE.JPG">
-<meta property="article:published_time" content="2026-08-12T08:48:52.000Z">
-<meta property="article:modified_time" content="2026-08-18T05:57:06.172Z">
 <meta property="article:author" content="baimochun">
-<meta property="article:tag" content="xgmac">
-<meta property="article:tag" content="以太网">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://blog.baimochun.xyz/2026/08/12/DWC-xgmac/xgmac%E7%BB%93%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE.JPG">
   
   
   
-  <title>DWC xgmac - baimochun</title>
+  <title>标签 - xgmac - baimochun</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
 
-
-  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
-
-  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
-
-  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
 
 
 
@@ -99,7 +85,7 @@
   <header>
     
 
-<div class="header-inner" style="height: 70vh;">
+<div class="header-inner" style="height: 80vh;">
   <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
     <a class="navbar-brand" href="/">
@@ -308,53 +294,17 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="DWC xgmac"></span>
+            <span id="subtitle" data-typed-text="标签 - xgmac"></span>
           
         </div>
 
         
-          
-  <div class="mt-3">
-    
-    
-      <span class="post-meta">
-        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2026-08-12 16:48" pubdate>
-          2026年8月12日 下午
-        </time>
-      </span>
-    
-  </div>
-
-  <div class="mt-1">
-    
-      <span class="post-meta mr-2">
-        <i class="iconfont icon-chart"></i>
-        
-          245 字
-        
-      </span>
-    
-
-    
-      <span class="post-meta mr-2">
-        <i class="iconfont icon-clock-fill"></i>
-        
-        
-        
-          3 分钟
-        
-      </span>
-    
-
-    
-    
-  </div>
-
-
-        
       </div>
 
+      
+        <div class="scroll-down-bar">
+          <i class="iconfont icon-arrowdown"></i>
+        </div>
       
     </div>
   </div>
@@ -368,163 +318,40 @@
 
   <main>
     
-      
-
-<div class="container-fluid nopadding-x">
-  <div class="row nomargin-x">
-    <div class="side-col d-none d-lg-block col-lg-2">
-      
-
-    </div>
-
-    <div class="col-lg-8 nopadding-x-md">
-      <div class="container nopadding-x-md" id="board-ctn">
-        <div id="board">
-          <article class="post-content mx-auto">
-            <h1 id="seo-header">DWC xgmac</h1>
-            
-            
-              <div class="markdown-body">
+      <div class="container nopadding-x-md">
+        <div id="board"
+          >
+          
+          <div class="container">
+            <div class="row">
+              <div class="col-12 col-md-10 m-auto">
                 
-                <h1 id="dw-xgmac使用记录"><a href="#dw-xgmac使用记录" class="headerlink" title="dw xgmac使用记录"></a>dw xgmac使用记录</h1><h2 id="典型结构介绍"><a href="#典型结构介绍" class="headerlink" title="典型结构介绍"></a>典型结构介绍</h2><p><img src="/2026/08/12/DWC-xgmac/xgmac%E7%BB%93%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE.JPG" srcset="/img/loading.gif" lazyload alt="xgmac结构"></p>
-<p>从典型结构图可以看出，xgmac接口部分由MAC、PCS和PMA组成</p>
-<ul>
-<li>PMA层：利用SerDes技术实现，实现数据的串并转换</li>
-<li>PCS层：实现编解码，扰码&#x2F;解扰。对MAC层的数据进行信道编码等</li>
-<li>MAC层：由XGMAC-AXI，XGMAC-MTL，XGMAC-CORE组成</li>
-</ul>
-<h2 id="uboot-mac初始化"><a href="#uboot-mac初始化" class="headerlink" title="uboot mac初始化"></a>uboot mac初始化</h2><p>初始化做的事情，dma,mtl,mac<br>dma init:</p>
-<ol>
-<li>复位，等复位完成</li>
-<li>配置dma burst</li>
-<li>创建描述符</li>
-<li>配置描述符位置和长度等</li>
-<li>配置dma中断</li>
-<li>启动dma<br>mtl init：</li>
-</ol>
 
-                
-              </div>
-            
-            <hr/>
-            <div>
-              <div class="post-metas my-3">
+<div class="list-group">
+  <p class="h4">共计 1 篇文章</p>
+  <hr>
   
   
-    <div class="post-meta">
-      <i class="iconfont icon-tags"></i>
+    
       
-        <a href="/tags/%E4%BB%A5%E5%A4%AA%E7%BD%91/" class="print-no-link">#以太网</a>
-      
-        <a href="/tags/xgmac/" class="print-no-link">#xgmac</a>
-      
-    </div>
+      <p class="h5">2026</p>
+    
+    <a href="/2026/11/02/DWC-xgmac/" class="list-group-item list-group-item-action">
+      <time>11-02</time>
+      <div class="list-group-item-title">DWC xgmac</div>
+    </a>
   
 </div>
 
 
-              
-  
 
-  <div class="license-box my-3">
-    <div class="license-title">
-      <div>DWC xgmac</div>
-      <div>https://blog.baimochun.xyz/2026/08/12/DWC-xgmac/</div>
-    </div>
-    <div class="license-meta">
-      
-        <div class="license-meta-item">
-          <div>作者</div>
-          <div>baimochun</div>
-        </div>
-      
-      
-        <div class="license-meta-item license-meta-date">
-          <div>发布于</div>
-          <div>2026年8月12日</div>
-        </div>
-      
-      
-      
-        <div class="license-meta-item">
-          <div>许可协议</div>
-          <div>
-            
-              
-              
-                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
-                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
-                    <i class="iconfont icon-cc-by"></i>
-                  </span>
-                </a>
-              
-            
+
+
+              </div>
+            </div>
           </div>
         </div>
-      
-    </div>
-    <div class="license-icon iconfont"></div>
-  </div>
-
-
-
-              
-            </div>
-
-            
-          </article>
-        </div>
       </div>
-    </div>
-
-    <div class="side-col d-none d-lg-block col-lg-2">
-      
-  <aside class="sidebar" style="margin-left: -1rem">
-    <div id="toc">
-  <p class="toc-header">
-    <i class="iconfont icon-list"></i>
-    <span>目录</span>
-  </p>
-  <div class="toc-body" id="toc-body"></div>
-</div>
-
-
-
-  </aside>
-
-
-    </div>
-  </div>
-</div>
-
-
-
-
-
-  
-
-
-
-  
-
-
-
-  
-
-
-
-  
-
-
-
-  
-
-
-
-
-
-
-
     
 
     
@@ -617,163 +444,6 @@
 
 
 
-
-  
-<script>
-  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
-    var toc = jQuery('#toc');
-    if (toc.length === 0 || !window.tocbot) { return; }
-    var boardCtn = jQuery('#board-ctn');
-    var boardTop = boardCtn.offset().top;
-
-    function isExpandAllEnabled() {
-      return CONFIG.toc && CONFIG.toc.expand_all === true;
-    }
-    function expandAllToc() {
-      if (!isExpandAllEnabled()) { return; }
-      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
-    }
-    function updateTocToggle($li, $childList) {
-      var $toggle = $li.children('.toc-toggle');
-      if ($toggle.length === 0) { return; }
-      var collapsed = $childList.hasClass('tocbot-is-collapsed');
-      $toggle
-        .toggleClass('toc-toggle-collapsed', collapsed)
-        .toggleClass('toc-toggle-expanded', !collapsed);
-    }
-    function bindTocToggle() {
-      if (!isExpandAllEnabled()) { return; }
-      jQuery('#toc-body .toc-list-item').each(function() {
-        var $li = jQuery(this);
-        var $childList = $li.children('ol');
-        if ($childList.length === 0) {
-          if ($li.children('.toc-toggle').length === 0) {
-            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
-          }
-          return;
-        }
-
-        if ($li.children('.toc-toggle').length === 0) {
-          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
-        }
-        updateTocToggle($li, $childList);
-      });
-      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        var $li = jQuery(this).parent('.toc-list-item');
-        var $childList = $li.children('ol');
-        if ($childList.length === 0) { return; }
-        $childList.toggleClass('tocbot-is-collapsed');
-        updateTocToggle($li, $childList);
-      });
-      if (!window.__tocToggleObserver) {
-        window.__tocToggleObserver = new MutationObserver(function(mutations) {
-          mutations.forEach(function(mutation) {
-            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
-            var $list = jQuery(mutation.target);
-            var $li = $list.parent('.toc-list-item');
-            if ($li.length === 0) { return; }
-            updateTocToggle($li, $list);
-          });
-        });
-        jQuery('#toc-body ol').each(function() {
-          window.__tocToggleObserver.observe(this, { attributes: true });
-        });
-      }
-    }
-    var tocConfig = Object.assign({
-      tocSelector     : '#toc-body',
-      contentSelector : '.markdown-body',
-      linkClass       : 'tocbot-link',
-      activeLinkClass : 'tocbot-active-link',
-      listClass       : 'tocbot-list',
-      isCollapsedClass: 'tocbot-is-collapsed',
-      collapsibleClass: 'tocbot-is-collapsible',
-      scrollSmooth    : true,
-      includeTitleTags: true,
-      headingsOffset  : -boardTop,
-    }, CONFIG.toc);
-    if (isExpandAllEnabled()) {
-      tocConfig.collapseDepth = 6;
-    }
-    window.tocbot.init(tocConfig);
-    if (toc.find('.toc-list-item').length > 0) {
-      toc.css('visibility', 'visible');
-    }
-    expandAllToc();
-    bindTocToggle();
-
-    Fluid.events.registerRefreshCallback(function() {
-      if ('tocbot' in window) {
-        tocbot.refresh();
-        var toc = jQuery('#toc');
-        if (toc.length === 0 || !tocbot) {
-          return;
-        }
-        if (toc.find('.toc-list-item').length > 0) {
-          toc.css('visibility', 'visible');
-        }
-        expandAllToc();
-        bindTocToggle();
-      }
-    });
-  });
-</script>
-
-
-  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
-
-  <script>Fluid.plugins.codeWidget();</script>
-
-
-  
-<script>
-  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
-    window.anchors.options = {
-      placement: CONFIG.anchorjs.placement,
-      visible  : CONFIG.anchorjs.visible
-    };
-    if (CONFIG.anchorjs.icon) {
-      window.anchors.options.icon = CONFIG.anchorjs.icon;
-    }
-    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
-    var res = [];
-    for (var item of el) {
-      res.push('.markdown-body > ' + item.trim());
-    }
-    if (CONFIG.anchorjs.placement === 'left') {
-      window.anchors.options.class = 'anchorjs-link-left';
-    }
-    window.anchors.add(res.join(', '));
-
-    Fluid.events.registerRefreshCallback(function() {
-      if ('anchors' in window) {
-        anchors.removeAll();
-        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
-        var res = [];
-        for (var item of el) {
-          res.push('.markdown-body > ' + item.trim());
-        }
-        if (CONFIG.anchorjs.placement === 'left') {
-          anchors.options.class = 'anchorjs-link-left';
-        }
-        anchors.add(res.join(', '));
-      }
-    });
-  });
-</script>
-
-
-  
-<script>
-  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
-    Fluid.plugins.fancyBox();
-  });
-</script>
-
-
-  <script>Fluid.plugins.imageCaption();</script>
 
   <script  src="/js/local-search.js" ></script>
 
