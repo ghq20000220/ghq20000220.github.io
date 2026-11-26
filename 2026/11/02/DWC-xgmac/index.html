@@ -21,16 +21,16 @@
   <meta name="author" content="baimochun">
   <meta name="keywords" content="">
   
-    <meta name="description" content="梳理DW XGAMC相关资料，整理汇总如下 资料整理结构  控制器部分是MAC PCS-R：PCS层，数据打包，将MAC的原始数据转为特定格式（64B&#x2F;66B）编码，加扰等 SerDes（PHY）：PMA层，是模拟电路，负责信号的串并转换以及电气驱动 没有PMD：当外接光口时，光口作为PMD层  代码分析XGMAC_PCS_Config XGMAC_PCS_Config中，等待上电后初始">
+    <meta name="description" content="梳理DW XGAMC相关资料，整理汇总如下 资料整理结构  控制器部分是MAC PCS-R：PCS层，数据打包，将MAC的原始数据转为特定格式（64B&#x2F;66B）编码，加扰等 SerDes（PHY）：PMA层，是模拟电路，负责信号的串并转换以及电气驱动 没有PMD：当外接光口时，光口作为PMD层 支持MAC回环，serdes回环, pcs回环（不确定）  代码分析（仿真版本）XGMAC_P">
 <meta property="og:type" content="article">
 <meta property="og:title" content="DWC xgmac">
 <meta property="og:url" content="https://blog.baimochun.xyz/2026/11/02/DWC-xgmac/index.html">
 <meta property="og:site_name" content="baimochun">
-<meta property="og:description" content="梳理DW XGAMC相关资料，整理汇总如下 资料整理结构  控制器部分是MAC PCS-R：PCS层，数据打包，将MAC的原始数据转为特定格式（64B&#x2F;66B）编码，加扰等 SerDes（PHY）：PMA层，是模拟电路，负责信号的串并转换以及电气驱动 没有PMD：当外接光口时，光口作为PMD层  代码分析XGMAC_PCS_Config XGMAC_PCS_Config中，等待上电后初始">
+<meta property="og:description" content="梳理DW XGAMC相关资料，整理汇总如下 资料整理结构  控制器部分是MAC PCS-R：PCS层，数据打包，将MAC的原始数据转为特定格式（64B&#x2F;66B）编码，加扰等 SerDes（PHY）：PMA层，是模拟电路，负责信号的串并转换以及电气驱动 没有PMD：当外接光口时，光口作为PMD层 支持MAC回环，serdes回环, pcs回环（不确定）  代码分析（仿真版本）XGMAC_P">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://blog.baimochun.xyz/2026/11/02/DWC-xgmac/xgmac%E7%BB%93%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE.JPG">
 <meta property="article:published_time" content="2026-11-02T06:43:52.000Z">
-<meta property="article:modified_time" content="2026-11-05T07:33:02.858Z">
+<meta property="article:modified_time" content="2026-11-10T06:57:50.343Z">
 <meta property="article:author" content="baimochun">
 <meta property="article:tag" content="xgmac">
 <meta property="article:tag" content="以太网">
@@ -331,7 +331,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          4.5k 字
+          6.6k 字
         
       </span>
     
@@ -342,7 +342,7 @@
         
         
         
-          38 分钟
+          56 分钟
         
       </span>
     
@@ -393,8 +393,9 @@
 <li>PCS-R：PCS层，数据打包，将MAC的原始数据转为特定格式（64B&#x2F;66B）编码，加扰等</li>
 <li>SerDes（PHY）：PMA层，是模拟电路，负责信号的串并转换以及电气驱动</li>
 <li>没有PMD：当外接光口时，光口作为PMD层</li>
+<li>支持MAC回环，serdes回环, pcs回环（不确定）</li>
 </ul>
-<h2 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h2><h3 id="XGMAC-PCS-Config"><a href="#XGMAC-PCS-Config" class="headerlink" title="XGMAC_PCS_Config"></a>XGMAC_PCS_Config</h3><ul>
+<h2 id="代码分析（仿真版本）"><a href="#代码分析（仿真版本）" class="headerlink" title="代码分析（仿真版本）"></a>代码分析（仿真版本）</h2><h3 id="XGMAC-PCS-Config"><a href="#XGMAC-PCS-Config" class="headerlink" title="XGMAC_PCS_Config"></a>XGMAC_PCS_Config</h3><ul>
 <li>XGMAC_PCS_Config中，等待上电后初始化了一些serdes相关的内容，不理解参数来源作用</li>
 <li>配置了phy回环</li>
 <li>对PCS寄存器的访问，依赖于代理寄存器</li>
@@ -422,6 +423,22 @@
 </ul>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">void</span> <span class="hljs-title function_">XGMAC_RUN</span><span class="hljs-params">( <span class="hljs-type">uint64_t</span> GMAC_num)</span><br>&#123;<br>	XGMAC_MAC_Write_n(MAC_Tx_Configuration, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>, GMAC_num);<br>	XGMAC_MAC_Write_n(DMA_CH0_Rx_Control, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>, GMAC_num);<br>	XGMAC_MAC_Write_n(MAC_Rx_Configuration, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>, GMAC_num);<br>	XGMAC_MAC_Write_n(DMA_CH0_Tx_Control, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>, GMAC_num);<br>&#125;<br><br></code></pre></td></tr></table></figure>
 
+<h2 id="代码分析（裸机）"><a href="#代码分析（裸机）" class="headerlink" title="代码分析（裸机）"></a>代码分析（裸机）</h2><p>由时钟使能，phy复位，等待PCS上电，dma复位，关闭自动协商，等pcs链接，dma，mtl，mac初始化等组成</p>
+<ul>
+<li><p>时钟选择：phy选择内部或者外部的时钟</p>
+</li>
+<li><p>等PCS上电：</p>
+  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">void</span> <span class="hljs-title function_">XPCS_wait_phy_power_up</span><span class="hljs-params">(<span class="hljs-type">uint32_t</span> xgmac_dev)</span><br>&#123;<br>    <span class="hljs-keyword">volatile</span> <span class="hljs-type">uint32_t</span> timeout = <span class="hljs-number">0U</span>;<br>    <br>    timeout = <span class="hljs-number">0U</span>;<br>    <span class="hljs-keyword">while</span>(!(XPCS_Read(xgmac_dev, VR_PMA_DIG_STS) &amp; <span class="hljs-number">0x10</span>))   <span class="hljs-comment">//等phy tx rx稳定</span><br>    &#123;<br>        timeout++;<br>        <span class="hljs-keyword">if</span> (timeout &gt;= XGMAC_XPCS_RX_STS_TIMEOUT)<br>        &#123;<br>            <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;XPCS wait PMA power up timeout!\n&quot;</span>);<br>            <span class="hljs-keyword">return</span>;<br>        &#125;<br>    &#125;<br>    <br>    timeout = <span class="hljs-number">0U</span>;<br>    <span class="hljs-keyword">while</span>(!(XPCS_Read(xgmac_dev, VR_XS_PCS_DIG_STS) &amp; <span class="hljs-number">0x10</span>))    <span class="hljs-comment">//等pcs tx rx稳定</span><br>    &#123;<br>        timeout++;<br>        <span class="hljs-keyword">if</span> (timeout &gt;= XGMAC_XPCS_RX_STS_TIMEOUT)<br>        &#123;<br>            <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;XPCS wait PCS power up timeout!\n&quot;</span>);<br>            <span class="hljs-keyword">return</span>;<br>        &#125;<br>    &#125;<br>    <br>    <span class="hljs-keyword">return</span>;<br>&#125;<br></code></pre></td></tr></table></figure></li>
+<li><p>dma软复位</p>
+</li>
+<li><p>关自动协商</p>
+  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">void</span> <span class="hljs-title function_">XPCS_disable_auto_negotiation</span><span class="hljs-params">(<span class="hljs-type">uint32_t</span> xgmac_dev)</span><br>&#123;<br><span class="hljs-meta">#<span class="hljs-keyword">define</span> PMA_TYPE_10GBASE_KR				(0xBU&lt;&lt;0)	</span><br>    XPCS_Write(xgmac_dev, SR_PMA_CTRL2, 	PMA_TYPE_10GBASE_KR);	<span class="hljs-comment">// pcs模式10GBASE KR</span><br><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> PDET_EN							(0x0U&lt;&lt;1)</span><br>    XPCS_Write(xgmac_dev, VR_AN_KR_MODE_CTRL, 	PDET_EN);   <span class="hljs-comment">//</span><br><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> AUTO_NEGOTIATION_DIS			(0x0U&lt;&lt;12)</span><br>    XPCS_Write(xgmac_dev, SR_AN_CTRL, 	AUTO_NEGOTIATION_DIS);	<span class="hljs-comment">// 自动协商禁用</span><br><br>    <span class="hljs-keyword">return</span> ;<br>&#125;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>等pcs链接</p>
+  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">void</span> <span class="hljs-title function_">XPCS_wait_xpcs_rx_link_up</span><span class="hljs-params">(<span class="hljs-type">uint32_t</span> xgmac_dev)</span><br>&#123;<br>    <span class="hljs-keyword">volatile</span> <span class="hljs-type">uint32_t</span> i = <span class="hljs-number">0</span>;<br>    <span class="hljs-keyword">volatile</span> <span class="hljs-type">uint32_t</span> timeout = <span class="hljs-number">0U</span>;<br><br>    <span class="hljs-comment">/* 等待 RX_STS bit[4] */</span><br>    timeout = <span class="hljs-number">0U</span>;<br>    <span class="hljs-keyword">while</span>(!(XPCS_Read(xgmac_dev, VR_XS_PMA_MP_12G_16G_25G_RX_STS) &amp; (<span class="hljs-number">0x1U</span> &lt;&lt; <span class="hljs-number">4</span>)))   <span class="hljs-comment">// 等phy有信号</span><br>    &#123;<br>        timeout++;<br>        <span class="hljs-keyword">if</span> (timeout &gt;= XGMAC_XPCS_RX_STS_TIMEOUT)<br>        &#123;<br>            <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;XPCS wait RX_STS timeout!\n&quot;</span>);<br>            <span class="hljs-keyword">return</span>;<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-comment">/* 等待 RX_PPM_STS0 == 0x80 */</span><br>    timeout = <span class="hljs-number">0U</span>;<br>    <span class="hljs-keyword">while</span>((XPCS_Read(xgmac_dev, VR_XS_PMA_MP_16G_25G_RX_PPM_STS0) != <span class="hljs-number">0x80U</span>))    <span class="hljs-comment">// </span><br>    &#123;<br>        timeout++;<br>        <span class="hljs-keyword">if</span> (timeout &gt;= XGMAC_XPCS_RX_PPM_TIMEOUT)<br>        &#123;<br>            <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;XPCS wait RX_PPM_STS0 timeout!\n&quot;</span>);<br>            <span class="hljs-keyword">return</span>;<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-comment">/* 延时 2500ns */</span><br>    <span class="hljs-keyword">for</span> (i = <span class="hljs-number">0U</span>; i &lt; <span class="hljs-number">2500U</span>; i++)<br>    &#123;<br>        <span class="hljs-keyword">asm</span>(<span class="hljs-string">&quot; snop 10 &quot;</span>);<br>    &#125;<br><br>    <span class="hljs-comment">/* 等待 PCS_STS1 bit[2] */</span><br>    timeout = <span class="hljs-number">0U</span>;<br>    <span class="hljs-keyword">while</span>(!(XPCS_Read(xgmac_dev, SR_XS_PCS_STS1) &amp; (<span class="hljs-number">0x1U</span> &lt;&lt; <span class="hljs-number">2</span>)))    <span class="hljs-comment">// 等当码组对齐和块锁定成功</span><br>    &#123;<br>        timeout++;<br>        <span class="hljs-keyword">if</span> (timeout &gt;= XGMAC_XPCS_PCS_STS_TIMEOUT)<br>        &#123;<br>            <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;XPCS wait PCS_STS1 timeout!\n&quot;</span>);<br>            <span class="hljs-keyword">return</span>;<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-keyword">return</span>;<br>&#125;<br></code></pre></td></tr></table></figure></li>
+<li><p>dma，mtl，mac初始化</p>
+</li>
+</ul>
 <h2 id="信息点"><a href="#信息点" class="headerlink" title="信息点"></a>信息点</h2><ul>
 <li>DMA<ul>
 <li>支持描述符64bit寻址</li>
@@ -521,6 +538,12 @@
                 <div class="post-prevnext my-3">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/2026/11/25/Agent%E5%9C%A8%E5%B5%8C%E5%85%A5%E5%BC%8F%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8%E5%88%86%E6%9E%90/" title="Agent在嵌入式软件开发中的应用分析">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Agent在嵌入式软件开发中的应用分析</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">
